@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 DB_CONFIG = {
     "host": "localhost",
-    "port": 5436,
-    "database": "Rock_Prod040226",
-    "username": "postgres",
-    "password": "sa@123",
+    "port": 5432,
+    "database": "urock",   # <-- change this
+    "username": "postgres",         # <-- change this
+    "password": "sa123",         # <-- change this
 }
+
 METADATA_FILE = "table_metadata.xlsx"
 
 EXCLUDE_TABLES = {
@@ -446,6 +447,8 @@ def generate_metadata(question: str, cols: list, rows: list) -> dict:
 async def chat_stream(question: str):
     try:
         schema, selected = get_schema_for_question(question)
+        logger.info(f"Tables selected ({len(selected)}): {selected}")
+        logger.info(f"Schema sent to LLM:\n{schema}")
         eco_hint = get_eco_hint(question)
 
         prompt = SQL_PROMPT.format(
@@ -455,6 +458,7 @@ async def chat_stream(question: str):
         )
 
         yield sse("status", {"text": "Generating SQL…"})
+        logger.info(f"Tables selected ({len(selected)}): {selected}")
         yield sse("tables_used", {"tables": selected})
 
         t0 = time.time()

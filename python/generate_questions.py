@@ -4,6 +4,10 @@ generate_questions.py
 Generates 1000 diverse natural-language questions from your PostgreSQL schema
 using Qwen2.5-Coder:7b (via Ollama).
 
+Table filtering rules (both must pass):
+  1. Table must exist in table_metadata.xlsx  (Excel-only tables used)
+  2. Table name must NOT start with "DT_"     (DT_ tables are skipped)
+
 Place this file next to backend_metadata.py and table_metadata.xlsx.
 Run:  python generate_questions.py
 
@@ -36,6 +40,14 @@ EXCLUDE_TABLES  = {
     "view_backup", "view_backup_audit",
     "v_all_ids", "totalprojects",
 }
+
+# ── Table filter rules ─────────────────────────────────────────────────────────
+# Rule 1: Skip any table whose name starts with these prefixes (case-insensitive)
+EXCLUDE_PREFIXES = ("DT_", "dt_")
+
+# Rule 2: ONLY generate from tables that exist in table_metadata.xlsx
+#         DB tables not present in the Excel sheet are ignored entirely.
+METADATA_TABLES_ONLY = True   # set False to allow all discovered DB tables
 
 # ── Generation settings ────────────────────────────────────────────────────────
 TARGET_QUESTIONS   = 1000   # how many unique questions to collect
@@ -310,8 +322,10 @@ def main():
     logger.info(" Question Generator — Qwen2.5-Coder:7b via Ollama")
     logger.info("═" * 60)
 
-    # 1. Load metadata
+    # 1. Load metadata — Excel sheet is the source of truth for allowed tables
     meta, _ = load_excel_metadata(METADATA_FILE)
+    metadata_table_names = set(meta.keys())
+    logger.info(f"Tables in metadata Excel: {len(metadata_table_names)}")
 
     # 2. Connect to DB
     db_uri = (
@@ -319,13 +333,40 @@ def main():
         f"@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
     )
     engine = create_engine(db_uri)
-    all_tables = discover_tables(engine)
+    all_db_tables = discover_tables(engine)
 
-    # 3. Build schema cache (same as backend)
-    schema_cache = build_schema_cache(engine, all_tables, meta)
+    # 3. Apply filters
+    #    Filter A — metadata-only: keep only tables present in the Excel sheet
+    #    Filter B — prefix exclusion: drop any table starting with DT_
+    filtered_tables = []
+    skipped_dt      = []
+    skipped_no_meta = []
+
+    for t in all_db_tables:
+        if t.startswith(EXCLUDE_PREFIXES):
+            skipped_dt.append(t)
+            continue
+        if METADATA_TABLES_ONLY and t not in metadata_table_names:
+            skipped_no_meta.append(t)
+            continue
+        filtered_tables.append(t)
+
+    logger.info("── Table filter summary ──────────────────────────────")
+    logger.info(f"  DB tables discovered    : {len(all_db_tables)}")
+    logger.info(f"  Skipped  (DT_ prefix)   : {len(skipped_dt)}  → {skipped_dt}")
+    logger.info(f"  Skipped  (not in Excel) : {len(skipped_no_meta)}")
+    logger.info(f"  ✅ Tables for generation : {len(filtered_tables)}  → {filtered_tables}")
+    logger.info("──────────────────────────────────────────────────────")
+
+    if not filtered_tables:
+        logger.error("No tables left after filtering — check your Excel metadata file.")
+        return
+
+    # 4. Build schema cache ONLY for the filtered tables
+    schema_cache = build_schema_cache(engine, filtered_tables, meta)
     logger.info(f"Schema cache ready: {len(schema_cache)} tables")
 
-    # 4. Init LLM — higher temperature for creative diversity
+    # 5. Init LLM — higher temperature for creative diversity
     llm = OllamaLLM(
         model="qwen2.5-coder:7b",
         temperature=0.7,       # more variety than the SQL model's 0.0
@@ -334,12 +375,12 @@ def main():
     )
     logger.info("LLM ready.")
 
-    # 5. Generate
+    # 6. Generate
     t_start = time.time()
     questions = generate_questions(schema_cache, llm, TARGET_QUESTIONS)
     elapsed  = round(time.time() - t_start, 1)
 
-    # 6. Save
+    # 7. Save
     out = Path(OUTPUT_FILE)
     out.write_text(json.dumps(questions, indent=2, ensure_ascii=False), encoding="utf-8")
 

@@ -62,6 +62,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   isFetchingSuggestions = false;
   suggestionTablesUsed: string[] = [];
 
+  // Voice input state
+  isListening = false;
+  private recognition: any = null;
+
   // Drives debounced POST /suggest calls
   private queryInput$    = new Subject<string>();
   private suggestionSub!: Subscription;
@@ -383,6 +387,40 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.searchQuery = '';
     this.suggestions = [];
     this.showSuggestions = false;
+  }
+
+  toggleVoiceInput() {
+    if (this.isListening) {
+      this.recognition?.stop();
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    this.recognition = new SpeechRecognition();
+    this.recognition.continuous = false;
+    this.recognition.interimResults = true;
+    this.recognition.lang = 'en-US';
+
+    this.recognition.onstart = () => { this.isListening = true; };
+
+    this.recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results as SpeechRecognitionResultList)
+        .map((r: any) => r[0].transcript)
+        .join('');
+      this.searchQuery = transcript;
+    };
+
+    this.recognition.onerror = () => { this.isListening = false; };
+    this.recognition.onend   = () => { this.isListening = false; };
+
+    this.recognition.start();
   }
 
   /**

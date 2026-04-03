@@ -77,6 +77,33 @@
 .search-box__clear:hover { background: #f1f3f4; }
 .search-box__clear svg  { width: 16px; height: 16px; }
 
+/* Mic button */
+.search-box__mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  color: #70757a;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.search-box__mic:hover { background: #f1f3f4; color: #1a73e8; }
+.search-box__mic svg   { width: 18px; height: 18px; }
+.search-box__mic.listening {
+  color: #d93025;
+  background: rgba(217, 48, 37, 0.1);
+  animation: mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 48, 37, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(217, 48, 37, 0); }
+}
+
 /* Send button */
 .search-box__send {
   display: flex;

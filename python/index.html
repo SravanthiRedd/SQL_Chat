@@ -354,7 +354,7 @@
   <div class="logo">db</div>
   <div>
     <h1>Database Chatbot</h1>
-    <p>sqlcoder:7b · PostgreSQL</p>
+    <p>gpt-4o-mini · PostgreSQL</p>
   </div>
   <div id="status-dot">
     <div class="dot" id="dot"></div>
@@ -369,7 +369,7 @@
       <div class="table-item" style="opacity:0.4;cursor:default">loading…</div>
     </div>
     <div class="sidebar-footer">
-      model: <span>sqlcoder:7b</span><br/>
+      model: <span>gpt-4o-mini</span><br/>
       backend: <span>:8000</span>
     </div>
   </aside>
@@ -411,6 +411,7 @@ input.addEventListener("keydown", e => {
 });
 
 // ── Health check + load tables ──
+// REPLACE the entire init() function with this:
 async function init() {
   try {
     const r = await fetch(`${API}/health`);
@@ -419,8 +420,16 @@ async function init() {
     const txt = document.getElementById("status-text");
     if (d.status === "ok") {
       dot.className = "dot ok";
-      txt.textContent = "connected";
-      loadTables(d.tables);
+      txt.textContent = `connected · ${d.total_tables} tables`;
+      // /health only returns counts — fetch actual list from /tables
+      try {
+        const tr = await fetch(`${API}/tables`);
+        const td = await tr.json();
+        loadTables(td.tables);
+      } catch {
+        document.getElementById("table-list").innerHTML =
+          '<div class="table-item" style="opacity:0.4;cursor:default">could not load tables</div>';
+      }
     } else {
       dot.className = "dot error";
       txt.textContent = "db error";

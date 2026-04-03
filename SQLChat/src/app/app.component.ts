@@ -227,12 +227,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           // API returned nothing — fall back to local fuzzy
           this.suggestions = this.localFuzzy(this.searchQuery);
         }
-        this.showSuggestions = this.suggestions.length > 0;
+        this.showSuggestions = !this.isLoading && this.suggestions.length > 0;
       },
       error: () => {
         this.isFetchingSuggestions = false;
         this.suggestions = this.localFuzzy(this.searchQuery);
-        this.showSuggestions = this.suggestions.length > 0;
+        this.showSuggestions = !this.isLoading && this.suggestions.length > 0;
       }
     });
   }

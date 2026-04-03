@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -196,7 +196,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   };
 
-  constructor(private webhookService: WebhookService, private fastApiService: FastApiService) {}
+  constructor(private webhookService: WebhookService, private fastApiService: FastApiService, private ngZone: NgZone) {}
   
   ngAfterViewInit() {
     this.createChart(this.defaultChartData);
@@ -408,17 +408,23 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.recognition.interimResults = true;
     this.recognition.lang = 'en-US';
 
-    this.recognition.onstart = () => { this.isListening = true; };
+    this.recognition.onstart = () => {
+      this.ngZone.run(() => { this.isListening = true; });
+    };
 
     this.recognition.onresult = (event: any) => {
       const transcript = Array.from(event.results as SpeechRecognitionResultList)
         .map((r: any) => r[0].transcript)
         .join('');
-      this.searchQuery = transcript;
+      this.ngZone.run(() => { this.searchQuery = transcript; });
     };
 
-    this.recognition.onerror = () => { this.isListening = false; };
-    this.recognition.onend   = () => { this.isListening = false; };
+    this.recognition.onerror = () => {
+      this.ngZone.run(() => { this.isListening = false; });
+    };
+    this.recognition.onend = () => {
+      this.ngZone.run(() => { this.isListening = false; });
+    };
 
     this.recognition.start();
   }

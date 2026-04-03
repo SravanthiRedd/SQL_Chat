@@ -22,7 +22,11 @@ export interface SuggestionResponse {
 export interface ParsedChartResponse {
   title?: string;
   type?: string;
+  format?: string;
   chartData?: ChartDataItem[];
+  tableColumns?: string[];
+  tableRows?: any[][];
+  tableCount?: number;
   rawText?: string;
   sqlQuery?: string;
   tablesUsed?: string[];
@@ -149,6 +153,12 @@ export class FastApiService {
         result.tablesUsed = tablesChunk.tables;
       }
 
+      // Extract format hint (table vs chart)
+      const formatChunk = chunks.find(c => c.type === 'format');
+      if (formatChunk?.format) {
+        result.format = formatChunk.format;
+      }
+
       // Extract status messages
       result.statusMessages = chunks
         .filter(c => c.type === 'status' && c.text)
@@ -159,16 +169,23 @@ export class FastApiService {
       if (resultChunk && Array.isArray(resultChunk.rows) && Array.isArray(resultChunk.columns)) {
         const columns: string[] = resultChunk.columns;
         const rows: any[][]     = resultChunk.rows;
-        const labelIndex = 0;
-        const valueIndex = columns.length - 1;
 
-        result.chartData = rows.map((row: any[]) => ({
-          label: String(row[labelIndex] ?? ''),
-          value: Number(row[valueIndex] ?? 0)
-        }));
+        result.title       = resultChunk.title;
+        result.type        = resultChunk.chart_type;
+        result.tableColumns = columns;
+        result.tableRows    = rows;
+        result.tableCount   = resultChunk.count;
 
-        result.title = resultChunk.title;
-        result.type  = resultChunk.chart_type;
+        // Only build chart data when format is not 'table'
+        if (result.format !== 'table') {
+          const labelIndex = 0;
+          const valueIndex = columns.findIndex((_, i) => i > 0 && rows.some(r => !isNaN(Number(r[i]))));
+          const vi = valueIndex > 0 ? valueIndex : columns.length - 1;
+          result.chartData = rows.map((row: any[]) => ({
+            label: String(row[labelIndex] ?? ''),
+            value: Number(row[vi] ?? 0)
+          }));
+        }
         return result;
       }
 

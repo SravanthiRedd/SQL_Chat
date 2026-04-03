@@ -54,6 +54,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   sqlQuery      = '';
   tablesUsed: string[] = [];
 
+  // Table display
+  responseFormat = '';
+  tableColumns: string[] = [];
+  tableRows: any[][] = [];
+
   // ── Intellisense state ──────────────────────────────────────
   searchFocused         = false;
   showSuggestions       = false;
@@ -440,6 +445,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.showSuggestions = false;
     this.sqlQuery = '';
     this.tablesUsed = [];
+    this.responseFormat = '';
+    this.tableColumns = [];
+    this.tableRows = [];
 
     this.fastApiService.streamChatAndParseChart(this.searchQuery).subscribe({
       next: (parsed) => {
@@ -448,20 +456,26 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         // Populate SQL and tables panel
         this.sqlQuery   = parsed.sqlQuery   ?? '';
         this.tablesUsed = parsed.tablesUsed ?? [];
+        this.responseFormat = parsed.format ?? '';
 
-        const chartItems = parsed.chartData;
+        this.webhookResponse = { success: true, data: null };
 
-        this.webhookResponse = {
-          success: true,
-          data: chartItems && chartItems.length > 0 ? chartItems : parsed.rawText
-        };
-
-        if (chartItems && chartItems.length > 0) {
-          this.createChart({
-            title: parsed.title || this.chartTitle,
-            type: (parsed.type as any) || this.currentChartType,
-            data: chartItems
-          });
+        if (parsed.format === 'table' && parsed.tableColumns?.length) {
+          // Show as table
+          this.tableColumns = parsed.tableColumns;
+          this.tableRows    = parsed.tableRows ?? [];
+          if (parsed.title) this.chartTitle = parsed.title;
+        } else {
+          // Show as chart
+          const chartItems = parsed.chartData;
+          this.webhookResponse.data = chartItems?.length ? chartItems : parsed.rawText;
+          if (chartItems && chartItems.length > 0) {
+            this.createChart({
+              title: parsed.title || this.chartTitle,
+              type: (parsed.type as any) || this.currentChartType,
+              data: chartItems
+            });
+          }
         }
       },
       error: (err) => {

@@ -131,8 +131,42 @@
 
     </section>
 
-    <!-- Chart Section -->
-    <section class="chart-section">
+    <!-- Table Section (shown when format === 'table') -->
+    <section class="chart-section" *ngIf="responseFormat === 'table' && tableColumns.length">
+      <div class="chart-header">
+        <h3>{{ chartTitle }}</h3>
+        <span class="table-count" *ngIf="tableRows.length">{{ tableRows.length }} rows</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th *ngFor="let col of tableColumns">{{ col }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of tableRows">
+              <td *ngFor="let cell of row">{{ cell }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SQL / tables panel still shown -->
+      <div class="webhook-response" *ngIf="sqlQuery">
+        <div class="response-tables" *ngIf="tablesUsed.length">
+          <span class="response-label">Tables used:</span>
+          <span class="response-table-tag" *ngFor="let t of tablesUsed">{{ t }}</span>
+        </div>
+        <div class="response-sql">
+          <span class="response-label">Generated SQL:</span>
+          <pre class="sql-block">{{ sqlQuery }}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chart Section (shown when format is chart-based) -->
+    <section class="chart-section" *ngIf="responseFormat !== 'table'">
       <div class="chart-header">
         <h3>{{ chartTitle }}</h3>
         <div class="chart-type-selector">

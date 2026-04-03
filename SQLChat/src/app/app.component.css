@@ -554,3 +554,63 @@ body {
   margin: 8px 0 0;
   border-left: 3px solid #2196F3;
 }
+
+/* ── Result Table ──────────────────────────────────────── */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.result-table thead tr {
+  background: #1a73e8;
+  color: #fff;
+}
+
+.result-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.result-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+  white-space: nowrap;
+}
+
+.result-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.result-table tbody tr:hover td {
+  background: #f5f9ff;
+}
+
+.result-table tbody tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+.result-table tbody tr:nth-child(even):hover td {
+  background: #f5f9ff;
+}
+
+.table-count {
+  font-size: 13px;
+  color: #666;
+  background: #e8f0fe;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}

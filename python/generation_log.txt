@@ -1,0 +1,279 @@
+Batch 001 | tables: ['AbpPermissions', 'WorkOrderUsers', 'FormWorkFlowStates', 'AbpUserRoles', 'Offices']
+  Style: Focus on COUNT and GROUP BY questions (how many, how often, totals per category).
+  Generated: 19 | New unique: 19 | Total: 19
+  Sample: ['How many work orders have been accepted?', 'How often are work orders rejected?', 'What is the total number of users assigned to work orders?']
+
+Batch 002 | tables: ['Forms', 'WorkOrderUsers', 'SampleSpecimens', 'AbpRoles', 'WorkOrderTests']
+  Style: Focus on date/time filters — questions about 'this week', 'last month', 'after date X'.
+  Generated: 18 | New unique: 18 | Total: 37
+  Sample: ['How many work orders were completed last month?', 'What is the average time taken to complete a work order this week?', 'Which technicians have worked on more than 5 work orders this month?']
+
+Batch 003 | tables: ['Regions', 'AbpUserRoles', 'Phases', 'Clients', 'WorkOrderUsers']
+  Style: Focus on TOP-N and ranking questions — 'top 5 projects by cost', 'most active technicians'.
+  Generated: 19 | New unique: 19 | Total: 56
+  Sample: ['Which region has the highest number of active projects?', 'What is the total cost of all completed work orders in January 2023?', 'Find the average duration of work orders by phase.']
+
+Batch 004 | tables: ['AbpOrganizationUnitRoles', 'AbpPermissions', 'Phases', 'AbpOrganizationUnits', 'Clients']
+  Style: Focus on existence and status checks — 'are there any open …', 'which … are pending'.
+  Generated: 18 | New unique: 18 | Total: 74
+  Sample: ["Are there any open work orders for the 'Sales' phase?", "Which projects are pending approval in the 'Engineering' organization unit?", 'How many work orders have been created in the last month?']
+
+Batch 005 | tables: ['Regions', 'FormWorkFlowStates', 'WorkOrders', 'Forms', 'AbpRoles']
+  Style: Focus on aggregation across joins — questions that naturally span two or more tables.
+  Generated: 18 | New unique: 18 | Total: 92
+  Sample: ['How many work orders were created in each region?', 'What is the average duration of work orders for each project phase?', "How many work orders are in 'Pending' status across all regions?"]
+
+Batch 006 | tables: ['AbpRoles', 'FormWorkFlowStates', 'AbpPermissions', 'Offices', 'AbpOrganizationUnitRoles']
+  Style: Focus on average and min/max calculations — 'average turnaround', 'maximum cost'.
+  Generated: 18 | New unique: 18 | Total: 110
+  Sample: ["What is the average turnaround time for work orders in office 'Fort Myers 2'?", 'What is the maximum cost of a project completed after January 1, 2023?', "How many projects were completed by 'Project Manager Smith' between February 1 and March 31, 2023?"]
+
+Batch 007 | tables: ['FormWorkFlowStates', 'AbpOrganizationUnits', 'WorkOrderUsers', 'AbpOrganizationUnitRoles', 'AbpUsers']
+  Style: Focus on listing/details questions — 'list all samples for project X', 'show details of …'.
+  Generated: 19 | New unique: 19 | Total: 129
+  Sample: ["List all work orders for the city of 'Fort Myers'.", "Show details of all samples associated with project 'P001'.", "Count the number of active users in organization unit 'OrgUnit123'."]
+
+Batch 008 | tables: ['WorkOrderEquipments', 'Equipments', 'AbpUsers', 'FormWorkFlowStates', 'Phases']
+  Style: Mix all styles freely — create the most diverse set you can.
+  Generated: 19 | New unique: 18 | Total: 147
+  Sample: ['What is the total number of equipment items currently assigned to work orders?', 'What is the average acquisition date of all equipment items?', 'Which technician has worked on the most work orders?']
+
+Batch 009 | tables: ['WorkOrderUsers', 'Projects', 'Forms', 'Departments', 'Equipments']
+  Style: Focus on COUNT and GROUP BY questions (how many, how often, totals per category).
+  Generated: 18 | New unique: 18 | Total: 165
+  Sample: ['How many work orders have been accepted by each user?', 'What is the total number of projects opened in the last month?', 'How often do users reject work orders?']
+
+Batch 010 | tables: ['SampleSpecimens', 'Clients', 'AbpRoles', 'Projects', 'AbpPermissions']
+  Style: Focus on date/time filters — questions about 'this week', 'last month', 'after date X'.
+  Generated: 18 | New unique: 18 | Total: 183
+  Sample: ['How many work orders were created last month?', 'What is the average test age for specimens collected in the past week?', 'How many unique projects have been completed this quarter?']
+
+Batch 011 | tables: ['WorkOrderEquipments', 'AbpUsers', 'Equipments', 'Phases', 'WorkOrders']
+  Style: Focus on TOP-N and ranking questions — 'top 5 projects by cost', 'most active technicians'.
+  Generated: 19 | New unique: 18 | Total: 201
+  Sample: ['What are the top 5 most expensive work orders and their total cost?', 'Which equipment is used in the most work orders?', 'How many work orders were created each month last year?']
+
+Batch 012 | tables: ['FormWorkFlowStates', 'Regions', 'AbpOrganizationUnits', 'Projects', 'WorkOrderTests']
+  Style: Focus on existence and status checks — 'are there any open …', 'which … are pending'.
+  Generated: 19 | New unique: 19 | Total: 220
+  Sample: ["Are there any open work orders in region 'North America'?", "Which projects are pending approval in region 'Europe'?", "How many work order tests have been performed on specimens from region 'Asia'?"]
+
+Batch 013 | tables: ['Departments', 'WorkOrderTests', 'Offices', 'WorkOrderUsers', 'AbpOrganizationUnitRoles']
+  Style: Focus on aggregation across joins — questions that naturally span two or more tables.
+  Generated: 18 | New unique: 18 | Total: 238
+  Sample: ['What is the total number of tests performed by each department?', 'How many unique samples have been tested across all work orders?', 'Which department has the highest average number of tests per work order?']
+
+Batch 014 | tables: ['Regions', 'AbpUserRoles', 'FormWorkFlowStates', 'AbpUsers', 'Projects']
+  Style: Focus on average and min/max calculations — 'average turnaround', 'maximum cost'.
+  Generated: 18 | New unique: 18 | Total: 256
+  Sample: ["What is the average turnaround time for work orders in region 'North America'?", "What is the minimum cost of samples collected from projects in 'California'?", 'What is the maximum number of technicians assigned to a single project?']
+
+Batch 015 | tables: ['AbpOrganizationUnitRoles', 'AbpRoles', 'AbpOrganizationUnits', 'AbpUsers', 'Projects']
+  Style: Focus on listing/details questions — 'list all samples for project X', 'show details of …'.
+  Generated: 19 | New unique: 19 | Total: 275
+  Sample: ['List all projects that are currently open.', "Show details of the project with project code 'PRJ001'.", 'Count the number of active projects.']
+
+Batch 016 | tables: ['Projects', 'WorkOrders', 'Regions', 'WorkOrderTests', 'Clients']
+  Style: Mix all styles freely — create the most diverse set you can.
+  Generated: 19 | New unique: 19 | Total: 294
+  Sample: ['How many projects were opened in the month of January 2023?', "What is the total number of work orders assigned to technician 'John Doe'?", 'List all clients that have more than 5 open projects.']
+
+Batch 017 | tables: ['FormWorkFlowStates', 'AbpRoles', 'AbpUsers', 'AbpPermissions', 'Departments']
+  Style: Focus on COUNT and GROUP BY questions (how many, how often, totals per category).
+  Generated: 18 | New unique: 17 | Total: 311
+  Sample: ["How many work orders are in the 'Pending' workflow state?", 'How many forms have been submitted by each user?', 'How often does a specific form, FormId:1234567890, change its state?']
+
+Batch 018 | tables: ['AbpUsers', 'Equipments', 'Projects', 'Departments', 'Clients']
+  Style: Focus on date/time filters — questions about 'this week', 'last month', 'after date X'.
+  Generated: 19 | New unique: 19 | Total: 330
+  Sample: ['How many projects were opened this week?', 'What is the total cost of work orders created last month?', 'Which technician has worked on the most work orders in the past quarter?']
+
+Batch 019 | tables: ['Offices', 'Equipments', 'Departments', 'AbpPermissions', 'Clients']
+  Style: Focus on TOP-N and ranking questions — 'top 5 projects by cost', 'most active technicians'.
+  Generated: 18 | New unique: 16 | Total: 346
+  Sample: ['What is the total number of active projects?', 'Which client has the most projects?', 'List the top 5 clients with the highest project costs.']
+
+Batch 020 | tables: ['AbpOrganizationUnits', 'Departments', 'WorkOrderTests', 'AbpUsers', 'Equipments']
+  Style: Focus on existence and status checks — 'are there any open …', 'which … are pending'.
+  Generated: 19 | New unique: 19 | Total: 365
+  Sample: ["Are there any open work orders in the 'North' region?", "Which projects are pending approval in the 'South' division?", 'Is there any equipment that requires calibration within the next week?']
+
+Batch 021 | tables: ['Offices', 'WorkOrderTests', 'Departments', 'FormWorkFlowStates', 'AbpOrganizationUnits']
+  Style: Focus on aggregation across joins — questions that naturally span two or more tables.
+  Generated: 19 | New unique: 19 | Total: 384
+  Sample: ["What is the total number of work orders processed in the 'Fort Myers' office?", "How many distinct technicians have performed tests on work orders in the 'Charleston' office?", 'What is the average test duration for all completed tests across all offices?']
+
+Batch 022 | tables: ['AbpUserRoles', 'AbpOrganizationUnits', 'Forms', 'AbpPermissions', 'Offices']
+  Style: Focus on average and min/max calculations — 'average turnaround', 'maximum cost'.
+  Generated: 18 | New unique: 18 | Total: 402
+  Sample: ["What is the average turnaround time for work orders in the 'Quality Assurance' organization unit?", 'Which project has the maximum cost and what is that cost?', "How many work orders were processed in the last month by technicians with role 'Senior Technician'?"]
+
+Batch 023 | tables: ['AbpRoles', 'AbpOrganizationUnitRoles', 'AbpUserRoles', 'Offices', 'Projects']
+  Style: Focus on listing/details questions — 'list all samples for project X', 'show details of …'.
+  Generated: 19 | New unique: 18 | Total: 420
+  Sample: ['List all project names.', 'How many projects are there?', "Show details of project with code '08.25001260'."]
+
+Batch 024 | tables: ['Clients', 'Offices', 'Equipments', 'AbpPermissions', 'WorkOrders']
+  Style: Mix all styles freely — create the most diverse set you can.
+  Generated: 19 | New unique: 17 | Total: 437
+  Sample: ['What is the average estimated duration of all work orders?', 'Which client has the most number of active work orders?', 'How many work orders were requested on a specific date?']
+
+Batch 025 | tables: ['Forms', 'FormWorkFlowStates', 'Offices', 'SampleSpecimens', 'Departments']
+  Style: Focus on COUNT and GROUP BY questions (how many, how often, totals per category).
+  Generated: 19 | New unique: 18 | Total: 455
+  Sample: ['What is the total number of samples received by each department?', 'How many technicians have worked on work orders for the past year?', 'What is the average delivery duration for completed work orders?']
+
+Batch 026 | tables: ['Phases', 'Regions', 'AbpPermissions', 'Forms', 'WorkOrderUsers']
+  Style: Focus on date/time filters — questions about 'this week', 'last month', 'after date X'.
+  Generated: 18 | New unique: 18 | Total: 473
+  Sample: ['How many work orders were created this week?', 'What is the average creation time of work orders in the last month?', 'Which phases had the highest number of work orders assigned to them in the past 30 days?']
+
+Batch 027 | tables: ['AbpUsers', 'SampleSpecimens', 'Forms', 'AbpOrganizationUnits', 'Offices']
+  Style: Focus on TOP-N and ranking questions — 'top 5 projects by cost', 'most active technicians'.
+  Generated: 20 | New unique: 20 | Total: 493
+  Sample: ['What are the top 5 projects by total cost?', 'Which technicians have completed the most work orders?', 'How many active users are there in each department?']
+
+Batch 028 | tables: ['Equipments', 'WorkOrderUsers', 'FormWorkFlowStates', 'AbpRoles', 'WorkOrderEquipments']
+  Style: Focus on existence and status checks — 'are there any open …', 'which … are pending'.
+  Generated: 19 | New unique: 19 | Total: 512
+  Sample: ['Are there any open work orders?', 'Which work orders are pending approval?', 'Are there any equipment items that require calibration?']
+
+Batch 029 | tables: ['Projects', 'Clients', 'Equipments', 'Offices', 'WorkOrderTests']
+  Style: Focus on aggregation across joins — questions that naturally span two or more tables.
+  Generated: 18 | New unique: 18 | Total: 530
+  Sample: ['How many projects were opened between January 1, 2023 and December 31, 2023?', 'What is the total number of work orders associated with each project manager?', 'Find the average completion time for all completed projects.']
+
+Batch 030 | tables: ['Forms', 'WorkOrders', 'WorkOrderEquipments', 'Departments', 'Equipments']
+  Style: Focus on average and min/max calculations — 'average turnaround', 'maximum cost'.
+  Generated: 19 | New unique: 19 | Total: 549
+  Sample: ['What is the average turnaround time for work orders created in the last month?', 'What is the minimum cost of a work order that has been completed?', 'What is the maximum cost of a work order that has been canceled?']
+
+Batch 031 | tables: ['Regions', 'Clients', 'Projects', 'AbpOrganizationUnits', 'SampleSpecimens']
+  Style: Focus on listing/details questions — 'list all samples for project X', 'show details of …'.
+  Generated: 18 | New unique: 17 | Total: 566
+  Sample: ["List all projects for client 'ABC Corp'.", "Show details of project with ID 'PRJ001'.", 'Calculate the total value of all projects by summing up their budgets.']
+
+Batch 032 | tables: ['AbpOrganizationUnits', 'Offices', 'WorkOrderUsers', 'AbpUserRoles', 'AbpUsers']
+  Style: Mix all styles freely — create the most diverse set you can.
+  Generated: 19 | New unique: 18 | Total: 584
+  Sample: ["How many work orders were assigned to 'John Doe'?", "What is the total cost of all completed projects in the 'Technology' division?", 'Who are the top 5 technicians with the most work orders assigned?']
+
+Batch 033 | tables: ['Regions', 'AbpUsers', 'Phases', 'AbpOrganizationUnitRoles', 'Offices']
+  Style: Focus on COUNT and GROUP BY questions (how many, how often, totals per category).
+  Generated: 19 | New unique: 17 | Total: 601
+  Sample: ['How often does each phase appear in work orders?', 'What is the total number of work orders by status?', 'What is the average time taken for a work order to be completed?']
+
+Batch 034 | tables: ['Projects', 'AbpUsers', 'Equipments', 'WorkOrderTests', 'AbpPermissions']
+  Style: Focus on date/time filters — questions about 'this week', 'last month', 'after date X'.
+  Generated: 19 | New unique: 18 | Total: 619
+  Sample: ['How many projects were created today?', 'What was the average project duration from opening to closing?', 'List all projects that were active this week and their PMs.']
+
+Batch 035 | tables: ['AbpPermissions', 'Phases', 'WorkOrderUsers', 'FormWorkFlowStates', 'Clients']
+  Style: Focus on TOP-N and ranking questions — 'top 5 projects by cost', 'most active technicians'.
+  Generated: 18 | New unique: 16 | Total: 635
+  Sample: ['What are the top 5 most expensive projects?', 'Which client has the highest total project cost?', 'How many work orders have been accepted by each technician?']
+
+Batch 036 | tables: ['Forms', 'Departments', 'AbpRoles', 'SampleSpecimens', 'AbpOrganizationUnits']
+  Style: Focus on existence and status checks — 'are there any open …', 'which … are pending'.
+  Generated: 18 | New unique: 15 | Total: 650
+  Sample: ['Which projects are pending approval?', "How many samples are in the 'Pending' status?", 'Which departments are currently active?']
+
+Batch 037 | tables: ['WorkOrders', 'AbpUsers', 'FormWorkFlowStates', 'AbpPermissions', 'AbpOrganizationUnits']
+  Style: Focus on aggregation across joins — questions that naturally span two or more tables.
+  Generated: 18 | New unique: 18 | Total: 668
+  Sample: ['What is the average duration of work orders that were created today?', 'How many work orders were created between January 1, 2023, and March 31, 2023?', 'Which project has the highest number of completed work orders?']
+
+Batch 038 | tables: ['AbpRoles', 'AbpUsers', 'AbpOrganizationUnitRoles', 'WorkOrderUsers', 'WorkOrderTests']
+  Style: Focus on average and min/max calculations — 'average turnaround', 'maximum cost'.
+  Generated: 19 | New unique: 19 | Total: 687
+  Sample: ['What is the average turnaround time for work orders in Q1 of last year?', 'Which technician has performed the most tests in the past month?', 'What is the maximum cost associated with a single work order?']
+
+Batch 039 | tables: ['AbpPermissions', 'Forms', 'AbpUsers', 'Clients', 'AbpOrganizationUnitRoles']
+  Style: Focus on listing/details questions — 'list all samples for project X', 'show details of …'.
+  Generated: 19 | New unique: 19 | Total: 706
+  Sample: ['List all active users.', "Show details of the client with ID 'C001'.", "How many work orders are associated with project 'P001'?"]
+
+Batch 040 | tables: ['WorkOrders', 'SampleSpecimens', 'AbpOrganizationUnitRoles', 'Regions', 'Forms']
+  Style: Mix all styles freely — create the most diverse set you can.
+  Generated: 18 | New unique: 16 | Total: 722
+  Sample: ['What is the average duration of all completed work orders?', 'How many work orders were requested by a specific user in the past year?', 'What is the total value of all free work orders?']
+
+Batch 041 | tables: ['AbpUserRoles', 'FormWorkFlowStates', 'Projects', 'WorkOrderEquipments', 'Clients']
+  Style: Focus on COUNT and GROUP BY questions (how many, how often, totals per category).
+  Generated: 18 | New unique: 17 | Total: 739
+  Sample: ['How many projects were opened in the last month?', "What is the total number of work orders associated with project 'Project A'?", 'How many unique equipment items are assigned to work orders?']
+
+Batch 042 | tables: ['AbpOrganizationUnits', 'Offices', 'Forms', 'WorkOrderEquipments', 'WorkOrderUsers']
+  Style: Focus on date/time filters — questions about 'this week', 'last month', 'after date X'.
+  Generated: 18 | New unique: 17 | Total: 756
+  Sample: ['What was the total amount collected for work orders last month?', 'Which office had the most work orders completed in the past quarter?', 'What is the average time taken to complete work orders from creation to closure last year?']
+
+Batch 043 | tables: ['AbpOrganizationUnitRoles', 'Equipments', 'Departments', 'Phases', 'AbpUsers']
+  Style: Focus on TOP-N and ranking questions — 'top 5 projects by cost', 'most active technicians'.
+  Generated: 19 | New unique: 18 | Total: 774
+  Sample: ['Which department has the most active users?', 'What is the total number of projects completed in each phase?', 'Who are the top 3 technicians with the highest number of completed work orders?']
+
+Batch 044 | tables: ['AbpPermissions', 'AbpOrganizationUnitRoles', 'Equipments', 'Forms', 'Regions']
+  Style: Focus on existence and status checks — 'are there any open …', 'which … are pending'.
+  Generated: 19 | New unique: 16 | Total: 790
+  Sample: ['How many samples are currently in stock?', 'Are there any equipment items that need calibration?', 'Which technicians have assigned tasks today?']
+
+Batch 045 | tables: ['WorkOrderUsers', 'AbpOrganizationUnitRoles', 'AbpUsers', 'FormWorkFlowStates', 'Phases']
+  Style: Focus on aggregation across joins — questions that naturally span two or more tables.
+  Generated: 19 | New unique: 18 | Total: 808
+  Sample: ['What is the total number of samples processed in each phase of a project?', 'Average time taken to process a sample from creation to completion.', 'Which users have rejected the most work orders and how many have they rejected?']
+
+Batch 046 | tables: ['WorkOrderEquipments', 'AbpRoles', 'Projects', 'Clients', 'AbpUserRoles']
+  Style: Focus on average and min/max calculations — 'average turnaround', 'maximum cost'.
+  Generated: 19 | New unique: 15 | Total: 823
+  Sample: ['What is the average turnaround time for all work orders?', 'What is the maximum cost of a single project?', 'What is the minimum number of equipment items assigned to any work order?']
+
+Batch 047 | tables: ['AbpUsers', 'SampleSpecimens', 'Phases', 'Offices', 'AbpOrganizationUnitRoles']
+  Style: Focus on listing/details questions — 'list all samples for project X', 'show details of …'.
+  Generated: 19 | New unique: 19 | Total: 842
+  Sample: ['List all technicians in the system.', "Show details of the project with ID '12345'.", 'Count the number of active users.']
+
+Batch 048 | tables: ['Regions', 'SampleSpecimens', 'FormWorkFlowStates', 'Phases', 'Departments']
+  Style: Mix all styles freely — create the most diverse set you can.
+  Generated: 19 | New unique: 19 | Total: 861
+  Sample: ['How many work orders were created in the month of January 2023?', "What is the average age of specimens that have been checked out by 'John Doe'?", 'Which department has the highest number of active projects?']
+
+Batch 049 | tables: ['WorkOrders', 'SampleSpecimens', 'AbpOrganizationUnitRoles', 'WorkOrderTests', 'Departments']
+  Style: Focus on COUNT and GROUP BY questions (how many, how often, totals per category).
+  Generated: 19 | New unique: 17 | Total: 878
+  Sample: ['What is the total number of completed work orders by each technician?', 'How often are work orders requested on Fridays compared to other days of the week?', 'How many work orders are pending for each project?']
+
+Batch 050 | tables: ['Departments', 'SampleSpecimens', 'AbpUsers', 'Projects', 'AbpUserRoles']
+  Style: Focus on date/time filters — questions about 'this week', 'last month', 'after date X'.
+  Generated: 19 | New unique: 19 | Total: 897
+  Sample: ['How many projects were opened last month?', 'What was the average age in hours of samples checked in after January 1st?', 'Who is the project manager for Project Number 08.25001260?']
+
+Batch 051 | tables: ['Departments', 'FormWorkFlowStates', 'AbpOrganizationUnits', 'Projects', 'AbpUsers']
+  Style: Focus on TOP-N and ranking questions — 'top 5 projects by cost', 'most active technicians'.
+  Generated: 19 | New unique: 18 | Total: 915
+  Sample: ['What are the top 5 projects by cost?', 'Which department has the most active technicians?', 'List the top 3 clients with the highest number of projects.']
+
+Batch 052 | tables: ['Equipments', 'WorkOrderUsers', 'WorkOrderTests', 'SampleSpecimens', 'Departments']
+  Style: Focus on existence and status checks — 'are there any open …', 'which … are pending'.
+  Generated: 18 | New unique: 15 | Total: 930
+  Sample: ['Which departments are active?', 'How many work orders have been assigned to the engineering department?', 'Are there any pending samples that need to be checked in?']
+
+Batch 053 | tables: ['WorkOrderUsers', 'AbpRoles', 'Offices', 'AbpUsers', 'Regions']
+  Style: Focus on aggregation across joins — questions that naturally span two or more tables.
+  Generated: 18 | New unique: 18 | Total: 948
+  Sample: ["How many work orders were accepted by users in the 'Project Manager' role between January 1, 2023, and December 31, 2023?", "What is the average number of days it takes to complete a work order that has been assigned to a user with the 'Technician' role?", 'How many work orders were rejected by users who have logged in more than 5 times in the last month?']
+
+Batch 054 | tables: ['Phases', 'Projects', 'AbpOrganizationUnitRoles', 'WorkOrderTests', 'AbpOrganizationUnits']
+  Style: Focus on average and min/max calculations — 'average turnaround', 'maximum cost'.
+  Generated: 20 | New unique: 18 | Total: 966
+  Sample: ["What is the average turnaround time for work orders in phase 'Analysis'?", 'Which project has the highest total cost of tests performed?', 'What is the minimum and maximum cost of tests for each phase?']
+
+Batch 055 | tables: ['WorkOrderEquipments', 'Departments', 'SampleSpecimens', 'FormWorkFlowStates', 'Projects']
+  Style: Focus on listing/details questions — 'list all samples for project X', 'show details of …'.
+  Generated: 19 | New unique: 18 | Total: 984
+  Sample: ["Show details of the project with code 'PRJ2345'.", "Count the number of work orders associated with project 'PRJ2345'.", "Get the total amount spent on equipment for project 'PRJ2345'."]
+
+Batch 056 | tables: ['Phases', 'Departments', 'AbpUserRoles', 'Clients', 'Regions']
+  Style: Mix all styles freely — create the most diverse set you can.
+  Generated: 19 | New unique: 17 | Total: 1001
+  Sample: ['Average completion time by phase', 'Which clients have more than 10 active work orders?', 'List all active departments and their statuses']

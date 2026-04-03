@@ -250,5 +250,22 @@ export class FastApiService {
     return this.http.post(`${this.baseUrl}/chat`, { message }, { headers });
   }
 
-    
+  /**
+   * POST /send-email — sends result data (table, text, or chart image) via email.
+   */
+  sendEmail(payload: {
+    to: string;
+    subject: string;
+    format: string;
+    sql_query?: string;
+    tables_used?: string[];
+    columns?: string[];
+    rows?: any[][];
+    result?: string;
+    chart_image?: string;
+    chart_type?: string;
+  }): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post(`${this.baseUrl}/send-email`, payload, { headers });
+  }
 }

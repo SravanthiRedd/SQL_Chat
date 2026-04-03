@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone, HostListener } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -7,6 +7,8 @@ import { Subject, Subscription, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { WebhookService, WebhookResponse } from './services/webhook.service';
 import { FastApiService } from './services/fastapi.service';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 
 Chart.register(...registerables);
 
@@ -59,6 +61,29 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   tableColumns: string[] = [];
   tableRows: any[][] = [];
   textResult = '';
+  showChart = false;
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+
+  // Email modal
+  showEmailModal = false;
+  emailTo = '';
+  isSendingEmail = false;
+  emailSent = false;
+  emailError = '';
+
+  // Export dropdown
+  showExportMenu = false;
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.export-dropdown')) {
+      this.showExportMenu = false;
+    }
+  }
 
   // ── Intellisense state ──────────────────────────────────────
   searchFocused         = false;
@@ -202,8 +227,272 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   };
 
+  private readonly chartKeywords = [
+    'chart', 'graph', 'plot', 'pie', 'bar', 'line', 'doughnut', 'donut',
+    'visualize', 'visualization', 'visual', 'show chart', 'show graph'
+  ];
+
+  get totalPages(): number {
+    return Math.ceil(this.tableRows.length / this.pageSize);
+  }
+
+  get pagedRows(): any[][] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.tableRows.slice(start, start + this.pageSize);
+  }
+
+  get pageNumbers(): number[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    const delta = 2;
+    const range: number[] = [];
+    for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+      range.push(i);
+    }
+    return range;
+  }
+
+  get pagedEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.tableRows.length);
+  }
+
+  get isNumericResult(): boolean {
+    const trimmed = this.textResult.trim();
+    return trimmed !== '' && !isNaN(Number(trimmed));
+  }
+
+  userWantsChart(query: string): boolean {
+    const q = query.toLowerCase();
+    return this.chartKeywords.some(kw => q.includes(kw));
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
   constructor(private webhookService: WebhookService, private fastApiService: FastApiService, private ngZone: NgZone) {}
   
+  // ── Export ───────────────────────────────────────────────────────────────
+
+  private get safeTitle(): string {
+    return (this.chartTitle || 'export').replace(/[/\\?%*:|"<>]/g, '-');
+  }
+
+  // ---- Table exports ----
+
+  exportCSV() {
+    this.showExportMenu = false;
+    const BOM  = '\ufeff';
+    const header = this.tableColumns.map(c => this.csvCell(c)).join(',');
+    const rows   = this.tableRows.map(row => row.map(cell => this.csvCell(cell)).join(',')).join('\n');
+    this.downloadBlob(BOM + header + '\n' + rows, `${this.safeTitle}.csv`, 'text/csv;charset=utf-8;');
+  }
+
+  exportExcel() {
+    this.showExportMenu = false;
+    const ws = XLSX.utils.aoa_to_sheet([this.tableColumns, ...this.tableRows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+    // Style the header row
+    const headerRange = XLSX.utils.decode_range(ws['!ref'] ?? 'A1');
+    for (let c = headerRange.s.c; c <= headerRange.e.c; c++) {
+      const addr = XLSX.utils.encode_cell({ r: 0, c });
+      if (!ws[addr]) continue;
+      ws[addr].s = { font: { bold: true }, fill: { fgColor: { rgb: '1A73E8' } } };
+    }
+    XLSX.writeFile(wb, `${this.safeTitle}.xlsx`);
+  }
+
+  exportTablePdf() {
+    this.showExportMenu = false;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const title = this.safeTitle;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, 16);
+
+    const cols = this.tableColumns;
+    const rows = this.tableRows;
+    const colW = Math.min(40, Math.floor(270 / cols.length));
+    let y = 28;
+
+    // Header
+    doc.setFontSize(9);
+    doc.setFillColor(26, 115, 232);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(14, y - 5, colW * cols.length, 8, 'F');
+    cols.forEach((col, i) => doc.text(String(col).substring(0, 14), 15 + i * colW, y));
+    y += 8;
+
+    // Rows
+    doc.setTextColor(50, 50, 50);
+    rows.forEach((row, ri) => {
+      if (y > 195) { doc.addPage(); y = 15; }
+      if (ri % 2 === 0) {
+        doc.setFillColor(245, 249, 255);
+        doc.rect(14, y - 5, colW * cols.length, 7, 'F');
+      }
+      doc.setFontSize(8);
+      row.forEach((cell, i) => doc.text(String(cell ?? '').substring(0, 14), 15 + i * colW, y));
+      y += 7;
+    });
+
+    doc.save(`${this.safeTitle}.pdf`);
+  }
+
+  // ---- Chart exports ----
+
+  exportChartPng() {
+    this.showExportMenu = false;
+    const url = this.pieChart.nativeElement.toDataURL('image/png');
+    const a   = document.createElement('a');
+    a.href    = url;
+    a.download = `${this.safeTitle}.png`;
+    a.click();
+  }
+
+  exportChartCSV() {
+    this.showExportMenu = false;
+    const cols = this.tableColumns.length ? this.tableColumns : ['Label', 'Value'];
+    const rows = this.tableRows.length
+      ? this.tableRows
+      : (this.currentChartData?.data.map(d => [d.label, d.value]) ?? []);
+    const BOM    = '\ufeff';
+    const header = cols.map(c => this.csvCell(c)).join(',');
+    const body   = rows.map(row => row.map(cell => this.csvCell(cell)).join(',')).join('\n');
+    this.downloadBlob(BOM + header + '\n' + body, `${this.safeTitle}.csv`, 'text/csv;charset=utf-8;');
+  }
+
+  exportChartExcel() {
+    this.showExportMenu = false;
+    const cols = this.tableColumns.length ? this.tableColumns : ['Label', 'Value'];
+    const rows = this.tableRows.length
+      ? this.tableRows
+      : (this.currentChartData?.data.map(d => [d.label, d.value]) ?? []);
+    const ws = XLSX.utils.aoa_to_sheet([cols, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Chart Data');
+    XLSX.writeFile(wb, `${this.safeTitle}.xlsx`);
+  }
+
+  exportChartPdf() {
+    this.showExportMenu = false;
+    const doc     = new jsPDF({ orientation: 'landscape' });
+    const imgData = this.pieChart.nativeElement.toDataURL('image/png');
+    const title   = this.safeTitle;
+
+    // Chart image on page 1
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, 16);
+    doc.addImage(imgData, 'PNG', 14, 22, 265, 150);
+
+    // Data table on page 2 (if real columns available)
+    const cols = this.tableColumns.length ? this.tableColumns : [];
+    const rows = this.tableRows.length    ? this.tableRows    : [];
+    if (cols.length && rows.length) {
+      doc.addPage();
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title + ' — Data', 14, 14);
+
+      const colW = Math.min(45, Math.floor(270 / cols.length));
+      let y = 26;
+      doc.setFontSize(9);
+      doc.setFillColor(26, 115, 232);
+      doc.setTextColor(255, 255, 255);
+      doc.rect(14, y - 5, colW * cols.length, 8, 'F');
+      cols.forEach((col, i) => doc.text(String(col).substring(0, 16), 15 + i * colW, y));
+      y += 8;
+
+      doc.setTextColor(50, 50, 50);
+      rows.forEach((row, ri) => {
+        if (y > 195) { doc.addPage(); y = 15; }
+        if (ri % 2 === 0) { doc.setFillColor(245, 249, 255); doc.rect(14, y - 5, colW * cols.length, 7, 'F'); }
+        doc.setFontSize(8);
+        row.forEach((cell, i) => doc.text(String(cell ?? '').substring(0, 16), 15 + i * colW, y));
+        y += 7;
+      });
+    }
+
+    doc.save(`${title}.pdf`);
+  }
+
+  // ---- Text export ----
+
+  exportText() {
+    this.showExportMenu = false;
+    const content = `${this.chartTitle}\n\n${this.textResult}`;
+    this.downloadBlob(content, `${this.safeTitle}.txt`, 'text/plain;charset=utf-8;');
+  }
+
+  private csvCell(value: any): string {
+    return `"${String(value ?? '').replace(/"/g, '""')}"`;
+  }
+
+  private downloadBlob(content: string, filename: string, type: string) {
+    const blob = new Blob([content], { type });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Email modal ───────────────────────────────────────────────────────────
+
+  openEmailModal() {
+    this.emailTo    = '';
+    this.emailSent  = false;
+    this.emailError = '';
+    this.showEmailModal = true;
+  }
+
+  closeEmailModal() {
+    this.showEmailModal = false;
+    this.emailTo        = '';
+    this.emailError     = '';
+    this.emailSent      = false;
+  }
+
+  sendEmail() {
+    if (!this.emailTo.trim()) return;
+    this.isSendingEmail = true;
+    this.emailError     = '';
+
+    const payload: any = {
+      to:          this.emailTo.trim(),
+      subject:     this.chartTitle || 'Analytics Result',
+      format:      this.responseFormat || 'chart',
+      sql_query:   this.sqlQuery,
+      tables_used: this.tablesUsed
+    };
+
+    if (this.responseFormat === 'table') {
+      payload.columns = this.tableColumns;
+      payload.rows    = this.tableRows;
+    } else if (this.responseFormat === 'text') {
+      payload.result = this.textResult;
+    } else if (this.showChart) {
+      payload.chart_image = this.pieChart.nativeElement.toDataURL('image/png');
+      payload.chart_type  = this.currentChartType;
+    }
+
+    this.fastApiService.sendEmail(payload).subscribe({
+      next: () => {
+        this.isSendingEmail = false;
+        this.emailSent = true;
+      },
+      error: (err) => {
+        this.isSendingEmail = false;
+        this.emailError = err?.error?.detail || err?.message || 'Failed to send email.';
+      }
+    });
+  }
+
   ngAfterViewInit() {
     this.createChart(this.defaultChartData);
     this.testWebhookConnection();
@@ -450,6 +739,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.tableColumns = [];
     this.tableRows = [];
     this.textResult = '';
+    this.currentPage = 1;
+    this.showChart = this.userWantsChart(this.searchQuery);
 
     this.fastApiService.streamChatAndParseChart(this.searchQuery).subscribe({
       next: (parsed) => {
@@ -476,8 +767,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.tableColumns = parsed.tableColumns;
           this.tableRows    = parsed.tableRows ?? [];
           if (parsed.title) this.chartTitle = parsed.title;
-        } else {
-          // Show as chart (original behaviour)
+        } else if (this.showChart) {
+          // Show as chart only if user asked for one
+          // Always store the raw columns/rows so exports use the real column names
+          this.tableColumns = parsed.tableColumns ?? [];
+          this.tableRows    = parsed.tableRows    ?? [];
           if (chartItems && chartItems.length > 0) {
             this.createChart({
               title: parsed.title || this.chartTitle,

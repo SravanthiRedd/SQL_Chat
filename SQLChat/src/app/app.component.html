@@ -131,14 +131,50 @@
 
     </section>
 
-    <!-- Text result (single-value, e.g. COUNT) -->
-    <section class="chart-section" *ngIf="responseFormat === 'text' && textResult">
-      <div class="chart-header">
-        <h3>{{ chartTitle }}</h3>
+    <!-- Text result -->
+    <section class="result-section" *ngIf="responseFormat === 'text' && textResult">
+
+      <!-- Numeric KPI card -->
+      <div class="kpi-card" *ngIf="isNumericResult">
+        <div class="kpi-card__accent"></div>
+        <div class="kpi-card__body">
+          <div class="kpi-card__icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
+              <path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-6"/>
+            </svg>
+          </div>
+          <div class="kpi-card__content">
+            <span class="kpi-card__label">{{ chartTitle }}</span>
+            <span class="kpi-card__value">{{ textResult | number }}</span>
+          </div>
+        </div>
       </div>
-      <div class="text-result-card">
-        <span class="text-result-value">{{ textResult }}</span>
+
+      <!-- Text / prose card -->
+      <div class="prose-card" *ngIf="!isNumericResult">
+        <div class="prose-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+            <path d="M9 12h6M9 8h6M9 16h4M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+          </svg>
+        </div>
+        <div class="prose-card__text">
+          <span class="prose-card__label">{{ chartTitle }}</span>
+          <p class="prose-card__body">{{ textResult }}</p>
+        </div>
       </div>
+
+      <!-- Action toolbar -->
+      <div class="action-toolbar">
+        <button class="action-btn action-btn--export" (click)="exportText()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export TXT
+        </button>
+        <button class="action-btn action-btn--email" (click)="openEmailModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          Send Email
+        </button>
+      </div>
+
       <div class="webhook-response" *ngIf="sqlQuery || tablesUsed.length">
         <div class="response-tables" *ngIf="tablesUsed.length">
           <span class="response-label">Tables used:</span>
@@ -152,10 +188,13 @@
     </section>
 
     <!-- Table result -->
-    <section class="chart-section" *ngIf="responseFormat === 'table' && tableColumns.length">
-      <div class="chart-header">
-        <h3>{{ chartTitle }}</h3>
-        <span class="table-count">{{ tableRows.length }} rows</span>
+    <section class="result-section" *ngIf="responseFormat === 'table' && tableColumns.length">
+      <div class="result-header">
+        <h3 class="result-title">{{ chartTitle }}</h3>
+        <div class="table-meta">
+          <span class="table-count">{{ tableRows.length }} rows</span>
+          <span class="table-page-info" *ngIf="totalPages > 1">Page {{ currentPage }} of {{ totalPages }}</span>
+        </div>
       </div>
       <div class="table-wrapper">
         <table class="result-table">
@@ -163,12 +202,59 @@
             <tr><th *ngFor="let col of tableColumns">{{ col }}</th></tr>
           </thead>
           <tbody>
-            <tr *ngFor="let row of tableRows">
+            <tr *ngFor="let row of pagedRows">
               <td *ngFor="let cell of row">{{ cell }}</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="page-btn page-btn--nav" [disabled]="currentPage === 1" (click)="goToPage(1)" title="First">«</button>
+        <button class="page-btn page-btn--nav" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" title="Previous">‹</button>
+        <button
+          *ngFor="let p of pageNumbers"
+          class="page-btn"
+          [class.active]="p === currentPage"
+          (click)="goToPage(p)"
+        >{{ p }}</button>
+        <button class="page-btn page-btn--nav" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)" title="Next">›</button>
+        <button class="page-btn page-btn--nav" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)" title="Last">»</button>
+        <span class="page-size-label">
+          Showing {{ (currentPage - 1) * pageSize + 1 }}–{{ pagedEnd }} of {{ tableRows.length }}
+        </span>
+      </div>
+
+      <!-- Action toolbar -->
+      <div class="action-toolbar">
+        <div class="export-dropdown">
+          <button class="action-btn action-btn--export" (click)="showExportMenu = !showExportMenu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" [class.rotated]="showExportMenu"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="export-menu" *ngIf="showExportMenu">
+            <button class="export-menu__item" (click)="exportCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              CSV (.csv)
+            </button>
+            <button class="export-menu__item" (click)="exportExcel()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+              Excel (.xlsx)
+            </button>
+            <button class="export-menu__item" (click)="exportTablePdf()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h1a2 2 0 0 1 0 4H9v-4"/></svg>
+              PDF Document
+            </button>
+          </div>
+        </div>
+        <button class="action-btn action-btn--email" (click)="openEmailModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          Send Email
+        </button>
+      </div>
+
       <div class="webhook-response" *ngIf="sqlQuery || tablesUsed.length">
         <div class="response-tables" *ngIf="tablesUsed.length">
           <span class="response-label">Tables used:</span>
@@ -182,27 +268,71 @@
     </section>
 
     <!-- Chart Section — canvas always in DOM so @ViewChild works -->
-    <section class="chart-section" [hidden]="responseFormat === 'table' || responseFormat === 'text'">
-      <div class="chart-header">
-        <h3>{{ chartTitle }}</h3>
-        <div class="chart-type-selector">
-          <button class="chart-type-btn" [class.active]="currentChartType === 'pie'"      (click)="changeChartType('pie')">Pie</button>
-          <button class="chart-type-btn" [class.active]="currentChartType === 'doughnut'" (click)="changeChartType('doughnut')">Donut</button>
-          <button class="chart-type-btn" [class.active]="currentChartType === 'bar'"      (click)="changeChartType('bar')">Bar</button>
-          <button class="chart-type-btn" [class.active]="currentChartType === 'line'"     (click)="changeChartType('line')">Line</button>
+    <section class="chart-section" [hidden]="!showChart || responseFormat === 'table' || responseFormat === 'text'">
+
+      <!-- Chart toolbar -->
+      <div class="chart-toolbar">
+        <div class="chart-toolbar__left">
+          <div class="chart-toolbar__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+              <path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-6"/>
+            </svg>
+          </div>
+          <div>
+            <div class="chart-toolbar__title">{{ chartTitle }}</div>
+            <div class="chart-toolbar__sub">{{ currentChartType | titlecase }} chart</div>
+          </div>
+        </div>
+
+        <div class="chart-toolbar__right">
+          <!-- Chart type pills -->
+          <div class="chart-type-selector">
+            <button class="chart-type-btn" [class.active]="currentChartType === 'pie'"      (click)="changeChartType('pie')">Pie</button>
+            <button class="chart-type-btn" [class.active]="currentChartType === 'doughnut'" (click)="changeChartType('doughnut')">Donut</button>
+            <button class="chart-type-btn" [class.active]="currentChartType === 'bar'"      (click)="changeChartType('bar')">Bar</button>
+            <button class="chart-type-btn" [class.active]="currentChartType === 'line'"     (click)="changeChartType('line')">Line</button>
+          </div>
+
+          <!-- Export dropdown -->
+          <div class="export-dropdown">
+            <button class="action-btn action-btn--export" (click)="showExportMenu = !showExportMenu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" [class.rotated]="showExportMenu"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="export-menu" *ngIf="showExportMenu">
+              <button class="export-menu__item" (click)="exportChartPng()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                PNG Image
+              </button>
+              <button class="export-menu__item" (click)="exportChartCSV()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                CSV Data
+              </button>
+              <button class="export-menu__item" (click)="exportChartExcel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                Excel (.xlsx)
+              </button>
+              <button class="export-menu__item" (click)="exportChartPdf()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h1a2 2 0 0 1 0 4H9v-4"/></svg>
+                PDF Document
+              </button>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <button class="action-btn action-btn--email" (click)="openEmailModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            Email
+          </button>
         </div>
       </div>
+
       <div class="chart-container">
         <canvas #pieChart width="400" height="400"></canvas>
       </div>
 
-      <div class="webhook-response" *ngIf="webhookResponse || sqlQuery">
-        <div class="response-header">
-          <h4>Response</h4>
-          <span class="response-status" [class.success]="webhookResponse?.success" [class.error]="webhookResponse && !webhookResponse.success">
-            {{ webhookResponse?.success ? 'Success' : 'ERROR' }}
-          </span>
-        </div>
+      <div class="webhook-response" *ngIf="sqlQuery || tablesUsed.length">
         <div class="response-tables" *ngIf="tablesUsed.length">
           <span class="response-label">Tables used:</span>
           <span class="response-table-tag" *ngFor="let t of tablesUsed">{{ t }}</span>
@@ -211,14 +341,78 @@
           <span class="response-label">Generated SQL:</span>
           <pre class="sql-block">{{ sqlQuery }}</pre>
         </div>
-        <div class="response-content" *ngIf="webhookResponse">
-          <p *ngIf="webhookResponse.error" class="error-message">{{ webhookResponse.error }}</p>
-          <pre *ngIf="webhookResponse.data" class="response-data">{{ webhookResponse.data | json }}</pre>
-        </div>
       </div>
     </section>
   </main>
 </div>
 
+<!-- Email Modal -->
+<div class="modal-overlay" *ngIf="showEmailModal" (click)="closeEmailModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal__header">
+      <div class="modal__title-row">
+        <div class="modal__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+        </div>
+        <h3>Send Result via Email</h3>
+      </div>
+      <button class="modal__close" (click)="closeEmailModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="modal__body" *ngIf="!emailSent">
+      <div class="modal__meta">
+        <span class="modal__meta-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+          {{ responseFormat === 'table' ? tableRows.length + ' rows · ' + tableColumns.length + ' columns' :
+             responseFormat === 'text'  ? 'Text result'  : 'Chart · ' + currentChartType }}
+        </span>
+        <span class="modal__meta-item" *ngIf="chartTitle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          {{ chartTitle }}
+        </span>
+      </div>
+
+      <label class="modal__label">Recipient Email</label>
+      <input
+        class="modal__input"
+        type="email"
+        placeholder="name@example.com"
+        [(ngModel)]="emailTo"
+        (keydown.enter)="sendEmail()"
+        autofocus
+      />
+
+      <p class="modal__error" *ngIf="emailError">{{ emailError }}</p>
+    </div>
+
+    <!-- Success state -->
+    <div class="modal__success" *ngIf="emailSent">
+      <div class="modal__success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="32" height="32"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <p>Sent successfully to <strong>{{ emailTo }}</strong></p>
+    </div>
+
+    <div class="modal__footer">
+      <button class="modal__btn modal__btn--cancel" (click)="closeEmailModal()">
+        {{ emailSent ? 'Close' : 'Cancel' }}
+      </button>
+      <button
+        *ngIf="!emailSent"
+        class="modal__btn modal__btn--send"
+        [disabled]="!emailTo.trim() || isSendingEmail"
+        (click)="sendEmail()"
+      >
+        <span class="btn-spinner" *ngIf="isSendingEmail"></span>
+        <svg *ngIf="!isSendingEmail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+        {{ isSendingEmail ? 'Sending…' : 'Send' }}
+      </button>
+    </div>
+  </div>
+</div>
 
 <router-outlet />

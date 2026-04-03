@@ -54,10 +54,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   sqlQuery      = '';
   tablesUsed: string[] = [];
 
-  // Table display
+  // Table / text / chart display
   responseFormat = '';
   tableColumns: string[] = [];
   tableRows: any[][] = [];
+  textResult = '';
 
   // ── Intellisense state ──────────────────────────────────────
   searchFocused         = false;
@@ -448,27 +449,35 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.responseFormat = '';
     this.tableColumns = [];
     this.tableRows = [];
+    this.textResult = '';
 
     this.fastApiService.streamChatAndParseChart(this.searchQuery).subscribe({
       next: (parsed) => {
         this.isLoading = false;
 
-        // Populate SQL and tables panel
-        this.sqlQuery   = parsed.sqlQuery   ?? '';
-        this.tablesUsed = parsed.tablesUsed ?? [];
-        this.responseFormat = parsed.format ?? '';
+        this.sqlQuery       = parsed.sqlQuery   ?? '';
+        this.tablesUsed     = parsed.tablesUsed ?? [];
+        this.responseFormat = parsed.format     ?? '';
 
-        this.webhookResponse = { success: true, data: null };
+        const chartItems = parsed.chartData;
 
-        if (parsed.format === 'table' && parsed.tableColumns?.length) {
+        this.webhookResponse = {
+          success: true,
+          data: chartItems && chartItems.length > 0 ? chartItems : parsed.rawText
+        };
+
+        if (parsed.format === 'text') {
+          // Single-value result: take first cell of first row
+          const rows = parsed.tableRows ?? [];
+          this.textResult = rows.length > 0 ? String(rows[0][0] ?? '') : '';
+          if (parsed.title) this.chartTitle = parsed.title;
+        } else if (parsed.format === 'table' && parsed.tableColumns?.length) {
           // Show as table
           this.tableColumns = parsed.tableColumns;
           this.tableRows    = parsed.tableRows ?? [];
           if (parsed.title) this.chartTitle = parsed.title;
         } else {
-          // Show as chart
-          const chartItems = parsed.chartData;
-          this.webhookResponse.data = chartItems?.length ? chartItems : parsed.rawText;
+          // Show as chart (original behaviour)
           if (chartItems && chartItems.length > 0) {
             this.createChart({
               title: parsed.title || this.chartTitle,

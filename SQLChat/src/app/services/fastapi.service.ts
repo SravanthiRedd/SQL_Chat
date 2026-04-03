@@ -176,8 +176,8 @@ export class FastApiService {
         result.tableRows    = rows;
         result.tableCount   = resultChunk.count;
 
-        // Only build chart data when format is not 'table'
-        if (result.format !== 'table') {
+        // Build chart data for all formats except 'table' and 'text'
+        if (result.format !== 'table' && result.format !== 'text') {
           const labelIndex = 0;
           const valueIndex = columns.findIndex((_, i) => i > 0 && rows.some(r => !isNaN(Number(r[i]))));
           const vi = valueIndex > 0 ? valueIndex : columns.length - 1;

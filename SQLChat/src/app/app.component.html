@@ -131,18 +131,36 @@
 
     </section>
 
-    <!-- Table Section (shown when format === 'table') -->
+    <!-- Text result (single-value, e.g. COUNT) -->
+    <section class="chart-section" *ngIf="responseFormat === 'text' && textResult">
+      <div class="chart-header">
+        <h3>{{ chartTitle }}</h3>
+      </div>
+      <div class="text-result-card">
+        <span class="text-result-value">{{ textResult }}</span>
+      </div>
+      <div class="webhook-response" *ngIf="sqlQuery || tablesUsed.length">
+        <div class="response-tables" *ngIf="tablesUsed.length">
+          <span class="response-label">Tables used:</span>
+          <span class="response-table-tag" *ngFor="let t of tablesUsed">{{ t }}</span>
+        </div>
+        <div class="response-sql" *ngIf="sqlQuery">
+          <span class="response-label">Generated SQL:</span>
+          <pre class="sql-block">{{ sqlQuery }}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Table result -->
     <section class="chart-section" *ngIf="responseFormat === 'table' && tableColumns.length">
       <div class="chart-header">
         <h3>{{ chartTitle }}</h3>
-        <span class="table-count" *ngIf="tableRows.length">{{ tableRows.length }} rows</span>
+        <span class="table-count">{{ tableRows.length }} rows</span>
       </div>
       <div class="table-wrapper">
         <table class="result-table">
           <thead>
-            <tr>
-              <th *ngFor="let col of tableColumns">{{ col }}</th>
-            </tr>
+            <tr><th *ngFor="let col of tableColumns">{{ col }}</th></tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of tableRows">
@@ -151,60 +169,33 @@
           </tbody>
         </table>
       </div>
-
-      <!-- SQL / tables panel still shown -->
-      <div class="webhook-response" *ngIf="sqlQuery">
+      <div class="webhook-response" *ngIf="sqlQuery || tablesUsed.length">
         <div class="response-tables" *ngIf="tablesUsed.length">
           <span class="response-label">Tables used:</span>
           <span class="response-table-tag" *ngFor="let t of tablesUsed">{{ t }}</span>
         </div>
-        <div class="response-sql">
+        <div class="response-sql" *ngIf="sqlQuery">
           <span class="response-label">Generated SQL:</span>
           <pre class="sql-block">{{ sqlQuery }}</pre>
         </div>
       </div>
     </section>
 
-    <!-- Chart Section (shown when format is chart-based) -->
-    <section class="chart-section" *ngIf="responseFormat !== 'table'">
+    <!-- Chart Section — canvas always in DOM so @ViewChild works -->
+    <section class="chart-section" [hidden]="responseFormat === 'table' || responseFormat === 'text'">
       <div class="chart-header">
         <h3>{{ chartTitle }}</h3>
         <div class="chart-type-selector">
-          <button 
-            class="chart-type-btn" 
-            [class.active]="currentChartType === 'pie'"
-            (click)="changeChartType('pie')"
-          >
-            Pie
-          </button>
-          <button 
-            class="chart-type-btn" 
-            [class.active]="currentChartType === 'doughnut'"
-            (click)="changeChartType('doughnut')"
-          >
-            Donut
-          </button>
-          <button 
-            class="chart-type-btn" 
-            [class.active]="currentChartType === 'bar'"
-            (click)="changeChartType('bar')"
-          >
-            Bar
-          </button>
-          <button 
-            class="chart-type-btn" 
-            [class.active]="currentChartType === 'line'"
-            (click)="changeChartType('line')"
-          >
-            Line
-          </button>
+          <button class="chart-type-btn" [class.active]="currentChartType === 'pie'"      (click)="changeChartType('pie')">Pie</button>
+          <button class="chart-type-btn" [class.active]="currentChartType === 'doughnut'" (click)="changeChartType('doughnut')">Donut</button>
+          <button class="chart-type-btn" [class.active]="currentChartType === 'bar'"      (click)="changeChartType('bar')">Bar</button>
+          <button class="chart-type-btn" [class.active]="currentChartType === 'line'"     (click)="changeChartType('line')">Line</button>
         </div>
       </div>
       <div class="chart-container">
         <canvas #pieChart width="400" height="400"></canvas>
       </div>
 
-          <!-- Webhook Response Display -->
       <div class="webhook-response" *ngIf="webhookResponse || sqlQuery">
         <div class="response-header">
           <h4>Response</h4>
@@ -212,26 +203,19 @@
             {{ webhookResponse?.success ? 'Success' : 'ERROR' }}
           </span>
         </div>
-
-        <!-- Tables used -->
         <div class="response-tables" *ngIf="tablesUsed.length">
           <span class="response-label">Tables used:</span>
           <span class="response-table-tag" *ngFor="let t of tablesUsed">{{ t }}</span>
         </div>
-
-        <!-- SQL query -->
         <div class="response-sql" *ngIf="sqlQuery">
           <span class="response-label">Generated SQL:</span>
           <pre class="sql-block">{{ sqlQuery }}</pre>
         </div>
-
-        <!-- Chart data / raw -->
         <div class="response-content" *ngIf="webhookResponse">
           <p *ngIf="webhookResponse.error" class="error-message">{{ webhookResponse.error }}</p>
           <pre *ngIf="webhookResponse.data" class="response-data">{{ webhookResponse.data | json }}</pre>
         </div>
       </div>
-      
     </section>
   </main>
 </div>

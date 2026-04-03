@@ -2,9 +2,10 @@ import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone, Hos
 import { RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
-import { Subject, Subscription, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { WebhookService, WebhookResponse } from './services/webhook.service';
 import { FastApiService } from './services/fastapi.service';
 import * as XLSX from 'xlsx';
@@ -101,34 +102,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private queryInput$    = new Subject<string>();
   private suggestionSub!: Subscription;
 
-  // Local fallback corpus (used when API is unavailable / query < 2 chars)
-  private readonly fallbackCorpus: string[] = [
-    'Show revenue by service line',
-    'Show revenue circle chart',
-    'Number of users per role',
-    'Total work orders created per day',
-    'Work orders by status',
-    'Show monthly growth trend',
-    'Show quarterly performance bar chart',
-    'Users by department',
-    'Top 10 clients by revenue',
-    'Show environmental service data',
-    'Geotechnical project summary',
-    'Materials usage report',
-    'Construction inspection count',
-    'Show pipeline status',
-    'HR headcount by role',
-    'Show line chart for revenue',
-    'Show donut chart for work orders',
-    'Count of work orders per user',
-    'Revenue by region',
-    'Active projects count',
-    'Show bar chart for users',
-    'Monthly active users',
-    'Work order completion rate',
-    'Show pie chart for materials',
-    'Field services summary',
-  ];
+  // Questions loaded from generated_questions.json
+  private questionCorpus: string[] = [];
 
 
   // Default chart data (fallback)
@@ -272,7 +247,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  constructor(private webhookService: WebhookService, private fastApiService: FastApiService, private ngZone: NgZone) {}
+  constructor(private webhookService: WebhookService, private fastApiService: FastApiService, private ngZone: NgZone, private http: HttpClient) {}
   
   // ── Export ───────────────────────────────────────────────────────────────
 
@@ -495,44 +470,27 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     this.createChart(this.defaultChartData);
-    this.testWebhookConnection();
 
-    // Debounced POST /suggest — fires 400ms after user stops typing
+    // Load questions from JSON asset
+    this.http.get<string[]>('assets/generated_questions.json').subscribe({
+      next: (questions) => { this.questionCorpus = questions; },
+      error: () => { this.questionCorpus = []; }
+    });
+
+    // Debounced suggestion updates using local corpus
     this.suggestionSub = this.queryInput$.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      switchMap((q: string) => {
-        if (q.trim().length < 2) {
-          this.isFetchingSuggestions = false;
-          this.showSuggestions = false;
-          return of({ suggestions: [] as string[], tables_used: [] as string[], corrected: undefined });
-        }
-        this.isFetchingSuggestions = true;
-        this.showSuggestions = true;
-        return this.fastApiService.getSuggestions(q);
-      })
-    ).subscribe({
-      next: (res) => {
+      debounceTime(200),
+      distinctUntilChanged()
+    ).subscribe((q: string) => {
+      if (q.trim().length < 2) {
         this.isFetchingSuggestions = false;
-        this.suggestionTablesUsed = res.tables_used ?? [];
-
-        if (res.suggestions && res.suggestions.length > 0) {
-          this.suggestions = res.suggestions.map((text: string) => ({
-            text,
-            corrected: false,
-            score: 0
-          }));
-        } else {
-          // API returned nothing — fall back to local fuzzy
-          this.suggestions = this.localFuzzy(this.searchQuery);
-        }
-        this.showSuggestions = !this.isLoading && this.suggestions.length > 0;
-      },
-      error: () => {
-        this.isFetchingSuggestions = false;
-        this.suggestions = this.localFuzzy(this.searchQuery);
-        this.showSuggestions = !this.isLoading && this.suggestions.length > 0;
+        this.showSuggestions = false;
+        this.suggestions = [];
+        return;
       }
+      this.isFetchingSuggestions = false;
+      this.suggestions = this.localFuzzy(q);
+      this.showSuggestions = this.suggestions.length > 0;
     });
   }
 
@@ -571,23 +529,43 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     return d[m][n];
   }
 
-  /** Local fuzzy fallback — used while API is in flight or unavailable */
+  /** Local fuzzy matching against question corpus */
   private localFuzzy(query: string): SuggestionItem[] {
     const q = query.toLowerCase().trim();
     if (q.length < 2) return [];
-    const results: SuggestionItem[] = [];
-    for (const text of this.fallbackCorpus) {
+
+    // Stop words to ignore when scoring
+    const stopWords = new Set(['a','an','the','is','are','was','were','be','been','have','has','had',
+      'do','does','did','will','would','could','should','may','might','of','in','on','at','to',
+      'for','with','by','from','and','or','but','not','what','how','which','who','where','when']);
+
+    const qWords = q.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
+
+    const scored: { text: string; score: number }[] = [];
+
+    for (const text of this.questionCorpus) {
       const tl = text.toLowerCase();
-      if (tl.startsWith(q))  { results.push({text, corrected:false, score:0}); continue; }
-      if (tl.includes(q))    { results.push({text, corrected:false, score:1}); continue; }
-      const qw = q.split(/\s+/), tw = tl.split(/\s+/);
-      if (qw.every((w: string) => tw.some((t: string) => t.includes(w) || w.includes(t))))
-        { results.push({text, corrected:false, score:2}); continue; }
-      const maxD = (w: string) => w.length <= 3 ? 1 : w.length <= 6 ? 2 : 3;
-      if (qw.every((w: string) => tw.some((t: string) => this.lev(w,t) <= maxD(w))))
-        { results.push({text, corrected:true, score:3}); }
+
+      // Exact substring match — highest priority
+      if (tl.includes(q)) { scored.push({ text, score: 100 }); continue; }
+
+      // Count how many query words appear in the question
+      const tw = tl.split(/\s+/);
+      let matchCount = 0;
+      for (const w of qWords) {
+        if (tw.some(t => t.includes(w) || w.includes(t))) matchCount++;
+      }
+
+      if (matchCount === 0) continue;
+
+      const ratio = matchCount / qWords.length;
+      scored.push({ text, score: ratio * 50 + matchCount });
     }
-    return results.sort((a,b) => a.score-b.score).slice(0,8);
+
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map(s => ({ text: s.text, corrected: false, score: s.score }));
   }
 
   /** The part the user already typed — shown normal weight */
@@ -630,12 +608,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // 1. Show local fuzzy results immediately (instant feedback)
+    // Show local fuzzy results immediately from question corpus
     this.suggestions = this.localFuzzy(q);
-    this.showSuggestions = true;
-    this.isFetchingSuggestions = true; // show pulsing dots while API is called
+    this.showSuggestions = this.suggestions.length > 0;
+    this.isFetchingSuggestions = false;
 
-    // 2. Push to debounced stream → calls getSuggestions after 400ms idle
     this.queryInput$.next(q);
   }
 
@@ -725,7 +702,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Handle search submission — streams response from FastAPI /chat
+   * Handle search submission — match against generated_questions.json corpus
    */
   onSearchSubmit() {
     if (!this.searchQuery.trim()) return;
@@ -745,31 +722,25 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.fastApiService.streamChatAndParseChart(this.searchQuery).subscribe({
       next: (parsed) => {
         this.isLoading = false;
-
         this.sqlQuery       = parsed.sqlQuery   ?? '';
         this.tablesUsed     = parsed.tablesUsed ?? [];
         this.responseFormat = parsed.format     ?? '';
 
         const chartItems = parsed.chartData;
-
         this.webhookResponse = {
           success: true,
           data: chartItems && chartItems.length > 0 ? chartItems : parsed.rawText
         };
 
         if (parsed.format === 'text') {
-          // Single-value result: take first cell of first row
           const rows = parsed.tableRows ?? [];
           this.textResult = rows.length > 0 ? String(rows[0][0] ?? '') : '';
           if (parsed.title) this.chartTitle = parsed.title;
         } else if (parsed.format === 'table' && parsed.tableColumns?.length) {
-          // Show as table
           this.tableColumns = parsed.tableColumns;
           this.tableRows    = parsed.tableRows ?? [];
           if (parsed.title) this.chartTitle = parsed.title;
         } else if (this.showChart) {
-          // Show as chart only if user asked for one
-          // Always store the raw columns/rows so exports use the real column names
           this.tableColumns = parsed.tableColumns ?? [];
           this.tableRows    = parsed.tableRows    ?? [];
           if (chartItems && chartItems.length > 0) {

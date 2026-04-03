@@ -176,15 +176,28 @@ export class FastApiService {
         result.tableRows    = rows;
         result.tableCount   = resultChunk.count;
 
+        // Single numeric value → show as text/KPI card
+        if (rows.length === 1 && columns.length === 1 && !isNaN(Number(rows[0][0]))) {
+          result.format = 'text';
+          return result;
+        }
+
         // Build chart data for all formats except 'table' and 'text'
         if (result.format !== 'table' && result.format !== 'text') {
+          // label = first column, value = first numeric column after index 0
           const labelIndex = 0;
-          const valueIndex = columns.findIndex((_, i) => i > 0 && rows.some(r => !isNaN(Number(r[i]))));
-          const vi = valueIndex > 0 ? valueIndex : columns.length - 1;
-          result.chartData = rows.map((row: any[]) => ({
-            label: String(row[labelIndex] ?? ''),
-            value: Number(row[vi] ?? 0)
-          }));
+          let valueIndex = columns.findIndex((_, i) => i > 0 && rows.some(r => !isNaN(Number(r[i]))));
+          if (valueIndex < 0) valueIndex = columns.length > 1 ? 1 : 0;
+
+          // If label and value are the same column, treat as table instead
+          if (valueIndex === labelIndex) {
+            result.format = 'table';
+          } else {
+            result.chartData = rows.map((row: any[]) => ({
+              label: String(row[labelIndex] ?? ''),
+              value: Number(row[valueIndex] ?? 0)
+            }));
+          }
         }
         return result;
       }

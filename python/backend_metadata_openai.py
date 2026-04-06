@@ -403,7 +403,7 @@ def run_query(sql: str):
         with engine.connect() as conn:
             result   = conn.execute(text(sql))
             cols     = list(result.keys())
-            raw_rows = result.fetchmany(50)
+            raw_rows = result.fetchall()
 
         def safe(v):
             if v is None: return None

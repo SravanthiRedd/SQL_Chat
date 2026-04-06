@@ -80,23 +80,30 @@ export class FastApiService {
 
         const reader = response.body!.getReader();
         const decoder = new TextDecoder();
+        let lineBuffer = ''; // accumulates bytes until a full SSE line is received
 
         const read = () => {
           reader.read().then(({ done, value }) => {
             if (done) {
+              // flush any remaining buffered line
+              if (lineBuffer.startsWith('data: ')) {
+                const payload = lineBuffer.slice(6).trim();
+                if (payload && payload !== '[DONE]') subject.next(payload);
+              }
               subject.complete();
               return;
             }
 
-            const chunk = decoder.decode(value, { stream: true });
+            lineBuffer += decoder.decode(value, { stream: true });
 
-            // Parse SSE lines: "data: <payload>\n\n"
-            chunk.split('\n').forEach(line => {
+            // Split on newlines; keep the last (possibly incomplete) segment in the buffer
+            const lines = lineBuffer.split('\n');
+            lineBuffer = lines.pop() ?? '';
+
+            lines.forEach(line => {
               if (line.startsWith('data: ')) {
                 const payload = line.slice(6).trim();
-                if (payload && payload !== '[DONE]') {
-                  subject.next(payload);
-                }
+                if (payload && payload !== '[DONE]') subject.next(payload);
               }
             });
 

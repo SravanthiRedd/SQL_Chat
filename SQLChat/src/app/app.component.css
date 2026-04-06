@@ -1202,6 +1202,24 @@ body {
   margin-left: 4px;
 }
 
+/* Header right-side group: Export + Email + close */
+.slice-detail__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Row count left + pagination right below the table */
+.drill-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .slice-detail__close {
   background: none;
   border: none;

@@ -332,6 +332,71 @@
         <canvas #pieChart width="400" height="400"></canvas>
       </div>
 
+      <div class="slice-detail" *ngIf="showDrillDown">
+        <div class="slice-detail__header">
+          <div class="slice-detail__title">
+            <span class="slice-detail__dot"
+              [style.background]="selectedSliceIndex !== null ? getSliceColor(selectedSliceIndex!) : '#1a73e8'">
+            </span>
+            <strong>{{ drillDownTitle }}</strong>
+            <span class="slice-detail__badge" *ngIf="drillDownRows.length">
+              {{ drillDownRows.length }} record{{ drillDownRows.length !== 1 ? 's' : '' }}
+            </span>
+          </div>
+          <button class="slice-detail__close" (click)="closeSliceDetail()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      
+        <div class="drill-loading" *ngIf="drillDownLoading">
+          <span class="btn-spinner"></span>
+          <span>Loading details…</span>
+        </div>
+      
+        <div class="drill-error" *ngIf="!drillDownLoading && drillDownError">
+          {{ drillDownError }}
+        </div>
+      
+        <div class="table-wrapper" *ngIf="!drillDownLoading && !drillDownError && drillDownColumns.length">
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th *ngFor="let col of drillDownColumns">{{ col }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of drillPagedRows">
+                <td *ngFor="let cell of row">{{ cell }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Drill-down pagination -->
+        <div class="pagination" *ngIf="!drillDownLoading && drillTotalPages > 1">
+          <button class="page-btn page-btn--nav" [disabled]="drillPage === 1" (click)="drillGoToPage(1)" title="First">«</button>
+          <button class="page-btn page-btn--nav" [disabled]="drillPage === 1" (click)="drillGoToPage(drillPage - 1)" title="Previous">‹</button>
+          <button
+            *ngFor="let p of drillPageNumbers"
+            class="page-btn"
+            [class.active]="p === drillPage"
+            (click)="drillGoToPage(p)"
+          >{{ p }}</button>
+          <button class="page-btn page-btn--nav" [disabled]="drillPage === drillTotalPages" (click)="drillGoToPage(drillPage + 1)" title="Next">›</button>
+          <button class="page-btn page-btn--nav" [disabled]="drillPage === drillTotalPages" (click)="drillGoToPage(drillTotalPages)" title="Last">»</button>
+          <span class="page-size-label">
+            Showing {{ (drillPage - 1) * drillPageSize + 1 }}–{{ drillPagedEnd }} of {{ drillDownRows.length }}
+          </span>
+        </div>
+      
+        <div class="response-sql" *ngIf="drillDownSql" style="margin-top:12px">
+          <span class="response-label">Generated SQL:</span>
+          <pre class="sql-block">{{ drillDownSql }}</pre>
+        </div>
+      </div>
+
       <div class="webhook-response" *ngIf="sqlQuery || tablesUsed.length">
         <div class="response-tables" *ngIf="tablesUsed.length">
           <span class="response-label">Tables used:</span>

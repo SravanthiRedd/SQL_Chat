@@ -1141,3 +1141,84 @@ body {
 }
 .modal__btn--send:hover:not(:disabled) { background: #1557b0; }
 .modal__btn--send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Slice detail panel ──────────────────────────────────────────── */
+.slice-detail {
+  margin: 16px 0 0;
+  border: 1px solid #e0e8f5;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(26,115,232,.08);
+}
+
+.slice-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #f0f5ff;
+  border-bottom: 1px solid #dce8fb;
+}
+
+.slice-detail__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+.slice-detail__dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.slice-detail__badge {
+  background: #1a73e8;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.slice-detail__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #5f6368;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background .15s;
+}
+.slice-detail__close:hover { background: #dce8fb; color: #1a73e8; }
+
+.slice-detail__row--active {
+  background: #e8f0fe !important;
+  font-weight: 600;
+}
+.slice-detail__row--active td { color: #1a73e8; }
+.drill-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.drill-error {
+  padding: 16px 20px;
+  color: #c0392b;
+  font-size: 14px;
+  background: #fdf2f2;
+  border-radius: 6px;
+  margin: 8px 0;
+}

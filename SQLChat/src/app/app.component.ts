@@ -78,6 +78,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // Export dropdown
   showExportMenu = false;
 
+  // Slice detail (click-through on chart)
+  selectedSliceIndex: number | null = null;
+  drillDownRows: any[][] = [];
+  drillDownColumns: string[] = [];
+  drillDownTitle = '';
+  drillDownLoading = false;
+  drillDownError = '';
+  showDrillDown = false;
+  drillDownSql = '';
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
@@ -229,6 +239,40 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   get pagedEnd(): number {
     return Math.min(this.currentPage * this.pageSize, this.tableRows.length);
+  }
+
+  // ── Drill-down pagination ─────────────────────────────────────────
+  drillPage = 1;
+  readonly drillPageSize = 10;
+
+  get drillTotalPages(): number {
+    return Math.ceil(this.drillDownRows.length / this.drillPageSize);
+  }
+
+  get drillPagedRows(): any[][] {
+    const start = (this.drillPage - 1) * this.drillPageSize;
+    return this.drillDownRows.slice(start, start + this.drillPageSize);
+  }
+
+  get drillPageNumbers(): number[] {
+    const total = this.drillTotalPages;
+    const current = this.drillPage;
+    const delta = 2;
+    const range: number[] = [];
+    for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+      range.push(i);
+    }
+    return range;
+  }
+
+  get drillPagedEnd(): number {
+    return Math.min(this.drillPage * this.drillPageSize, this.drillDownRows.length);
+  }
+
+  drillGoToPage(page: number) {
+    if (page >= 1 && page <= this.drillTotalPages) {
+      this.drillPage = page;
+    }
   }
 
   get isNumericResult(): boolean {
@@ -892,6 +936,103 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
   
+  closeSliceDetail() {
+  this.selectedSliceIndex = null;
+  this.showDrillDown = false;
+  this.drillDownRows = [];
+  this.drillDownColumns = [];
+  this.drillDownTitle = '';
+  this.drillDownError = '';
+  this.drillDownSql = '';
+  this.drillPage = 1;
+}
+onChartSliceClick(index: number) {
+  if (!this.currentChartData || index < 0) return;
+  this.ngZone.run(() => {
+    this.selectedSliceIndex = index;
+    const clickedLabel = this.currentChartData!.data[index].label;
+    const question = this.buildDrillDownQuestion(clickedLabel);
+    if (!question) return;
+
+    this.drillDownTitle   = `Details: ${clickedLabel}`;
+    this.drillDownLoading = true;
+    this.drillDownError   = '';
+    this.drillDownRows    = [];
+    this.drillDownColumns = [];
+    this.drillDownSql     = '';
+    this.drillPage        = 1;
+    this.showDrillDown    = true;
+
+    this.fastApiService.streamChatAndParseChart(question).subscribe({
+      next: (parsed) => {
+        this.ngZone.run(() => {
+          this.drillDownLoading = false;
+          this.drillDownSql     = parsed.sqlQuery ?? '';
+          this.drillDownColumns = parsed.tableColumns ?? [];
+          this.drillDownRows    = parsed.tableRows ?? [];
+          if (!this.drillDownRows.length) {
+            this.drillDownError = 'No records found.';
+          }
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          this.drillDownLoading = false;
+          this.drillDownError   = err.message || 'Failed to load details.';
+        });
+      }
+    });
+  });
+}
+
+private buildDrillDownQuestion(clickedLabel: string): string {
+  return `The user previously asked: "${this.searchQuery}". 
+The chart showed grouped results. 
+Now the user clicked on "${clickedLabel}". 
+Show the individual detail records for "${clickedLabel}" from the same data.
+Return all relevant columns without aggregation.`;
+}
+
+// private buildDrillDownQuestion(clickedLabel: string): string {
+//   const q = this.searchQuery.trim();
+
+//   // 1. Extract the grouping dimension — the word(s) after "by / per / grouped by"
+//   const byMatch = q.match(
+//     /\b(?:by|per|group(?:ed)?\s+by)\s+([a-zA-Z][a-zA-Z0-9\s_]*?)(?=\s*(?:,|$|\b(?:and|where|with|in|for|order|limit|having)\b))/i
+//   );
+//   const dimension = byMatch?.[1]?.trim() ?? null;
+
+//   // 2. Derive the subject entity by stripping chart/aggregation noise from the query
+//   const entity = q
+//     .replace(/\b(?:generate|show|display|create|get|find|list|give|produce|visualize)\b/gi, '')
+//     .replace(/\b(?:a|an|the|me|all)\b/gi, '')
+//     .replace(/\b(?:pie|bar|line|donut|doughnut|chart|graph|plot|visual(?:ization)?)\b/gi, '')
+//     .replace(/\b(?:showing|for|of|with|about)\b/gi, '')
+//     .replace(/\b(?:count|total|sum|number|amount|percentage|average|avg)\b/gi, '')
+//     .replace(/\b(?:by|per|group(?:ed)?\s+by)\s+[a-zA-Z][a-zA-Z0-9\s_]*/gi, '')
+//     .replace(/\s+/g, ' ')
+//     .trim() || 'records';
+
+//   if (dimension) {
+//     return `List all ${entity} where ${dimension} is '${clickedLabel}'`;
+//   }
+
+//   // Fallback: append the filter to the original question as a refinement
+//   return `From the context of "${q}", show all individual records for ${clickedLabel}`;
+// }
+
+  getSliceColor(index: number): string {
+    if (!this.currentChartData) return this.defaultColors[index % this.defaultColors.length];
+    const item = this.currentChartData.data[index];
+    return item?.color || (this.currentChartData.colors?.[index]) || this.defaultColors[index % this.defaultColors.length];
+  }
+
+  getSlicePercentage(value: number): string {
+    if (!this.currentChartData) return '0%';
+    const total = this.currentChartData.data.reduce((sum, d) => sum + d.value, 0);
+    return total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+  }
+
   /**
    * Create chart dynamically from API data (supports multiple chart types)
    * @param apiData - Chart data from API response
@@ -906,6 +1047,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
     // Store current chart data for type switching
     this.currentChartData = apiData;
+    this.selectedSliceIndex = null;
 
     // Destroy existing chart if it exists
     if (this.currentChart) {
@@ -948,25 +1090,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           legend: {
             ...typeConfig.legend,
             onClick: (event: any, legendItem: any, legend: any) => {
-              // Handle legend click to toggle data visibility
-              const chart = legend.chart;
-              const index = legendItem.index;
-              
-              if (chartType === 'pie' || chartType === 'doughnut') {
-                // For pie/doughnut charts, toggle segment visibility
-                const meta = chart.getDatasetMeta(0);
-                meta.data[index].hidden = !meta.data[index].hidden;
-              } else {
-                // For bar/line charts, toggle dataset visibility
-                const dataset = chart.data.datasets[0];
-                const meta = chart.getDatasetMeta(0);
-                
-                if (meta.data[index]) {
-                  meta.data[index].hidden = !meta.data[index].hidden;
-                }
-              }
-              
-              chart.update();
+              this.onChartSliceClick(legendItem.index);
             }
           },
           tooltip: {
@@ -996,6 +1120,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         scales: typeConfig.scales,
         animation: {
           duration: 1000
+        },
+        onClick: (event: any, elements: any[]) => {
+          if (elements.length > 0) {
+            this.onChartSliceClick(elements[0].index);
+          }
         }
       }
     };

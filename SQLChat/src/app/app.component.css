@@ -563,16 +563,31 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 12px;
+}
+
+.result-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .result-title {
   font-size: 20px;
   font-weight: 600;
   color: #333;
-  margin: 0 0 20px;
+  margin: 0;
 }
 
-.result-header .result-title { margin: 0; }
+/* Row count + page info shown below the table */
+.table-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 6px 2px;
+}
 
 /* ── Result Table ──────────────────────────────────────── */
 .table-wrapper {

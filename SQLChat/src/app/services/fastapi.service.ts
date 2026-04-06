@@ -279,7 +279,7 @@ export class FastApiService {
     chart_type?: string;
   }): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    const n8nWebhook = 'https://aihub.astmcompliance.ai/n8n/webhook-test/send-Email';
+    const n8nWebhook = 'https://aihub.astmcompliance.ai/n8n/webhook/send-Email';
     return this.http.post(n8nWebhook, payload, { headers });
   }
 }

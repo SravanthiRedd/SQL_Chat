@@ -77,6 +77,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Export dropdown
   showExportMenu = false;
+  showDrillExportMenu = false;
+  private isDrillEmail = false;
 
   // Slice detail (click-through on chart)
   selectedSliceIndex: number | null = null;
@@ -91,9 +93,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocumentClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    if (!target.closest('.export-dropdown')) {
-      this.showExportMenu = false;
-    }
+    if (!target.closest('.export-dropdown'))       this.showExportMenu = false;
+    if (!target.closest('.drill-export-dropdown')) this.showDrillExportMenu = false;
   }
 
   // ── Intellisense state ──────────────────────────────────────
@@ -447,6 +448,75 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.downloadBlob(content, `${this.safeTitle}.txt`, 'text/plain;charset=utf-8;');
   }
 
+  // ---- Drill-down exports ----
+
+  private get drillSafeTitle(): string {
+    return (this.drillDownTitle || 'drill-down').replace(/[/\\?%*:|"<>]/g, '-');
+  }
+
+  exportDrillCSV() {
+    this.showDrillExportMenu = false;
+    const BOM    = '\ufeff';
+    const header = this.drillDownColumns.map(c => this.csvCell(c)).join(',');
+    const rows   = this.drillDownRows.map(row => row.map(cell => this.csvCell(cell)).join(',')).join('\n');
+    this.downloadBlob(BOM + header + '\n' + rows, `${this.drillSafeTitle}.csv`, 'text/csv;charset=utf-8;');
+  }
+
+  exportDrillExcel() {
+    this.showDrillExportMenu = false;
+    const ws = XLSX.utils.aoa_to_sheet([this.drillDownColumns, ...this.drillDownRows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Details');
+    XLSX.writeFile(wb, `${this.drillSafeTitle}.xlsx`);
+  }
+
+  exportDrillPdf() {
+    this.showDrillExportMenu = false;
+    const doc   = new jsPDF({ orientation: 'landscape' });
+    const title = this.drillSafeTitle;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, 16);
+
+    const cols = this.drillDownColumns;
+    const rows = this.drillDownRows;
+    const colW = Math.min(40, Math.floor(270 / cols.length));
+    let y = 28;
+
+    doc.setFontSize(9);
+    doc.setFillColor(26, 115, 232);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(14, y - 5, colW * cols.length, 8, 'F');
+    cols.forEach((col, i) => doc.text(String(col).substring(0, 14), 15 + i * colW, y));
+    y += 8;
+
+    doc.setTextColor(50, 50, 50);
+    rows.forEach((row, ri) => {
+      if (y > 195) { doc.addPage(); y = 15; }
+      if (ri % 2 === 0) {
+        doc.setFillColor(245, 249, 255);
+        doc.rect(14, y - 5, colW * cols.length, 7, 'F');
+      }
+      doc.setFontSize(8);
+      row.forEach((cell, i) => doc.text(String(cell ?? '').substring(0, 14), 15 + i * colW, y));
+      y += 7;
+    });
+
+    doc.save(`${title}.pdf`);
+  }
+
+  openDrillEmailModal() {
+    this.isDrillEmail = true;
+    this.openEmailModal();
+  }
+
+  private buildExcelBase64(columns: string[], rows: any[][], sheetName = 'Data'): string {
+    const ws = XLSX.utils.aoa_to_sheet([columns, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+  }
+
   private csvCell(value: any): string {
     return `"${String(value ?? '').replace(/"/g, '""')}"`;
   }
@@ -475,6 +545,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.emailTo        = '';
     this.emailError     = '';
     this.emailSent      = false;
+    this.isDrillEmail   = false;
   }
 
   sendEmail() {
@@ -482,31 +553,37 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.isSendingEmail = true;
     this.emailError     = '';
 
-    const payload: any = {
-      to:          this.emailTo.trim(),
-      subject:     this.chartTitle || 'Analytics Result',
-      format:      this.responseFormat || 'chart',
-      sql_query:   this.sqlQuery,
-      tables_used: this.tablesUsed
-    };
+    const subject = this.isDrillEmail
+      ? (this.drillDownTitle || 'Details')
+      : (this.chartTitle || 'Analytics Result');
 
-    if (this.responseFormat === 'table') {
-      payload.columns = this.tableColumns;
-      payload.rows    = this.tableRows;
-    } else if (this.responseFormat === 'text') {
-      payload.result = this.textResult;
+    const payload: any = { to: this.emailTo.trim(), subject };
+
+    if (this.isDrillEmail) {
+      payload.file_type     = 'excel';
+      payload.excel_base64  = this.buildExcelBase64(this.drillDownColumns, this.drillDownRows, 'Details');
+      payload.excel_filename = `${this.drillSafeTitle}.xlsx`;
+    } else if (this.responseFormat === 'table') {
+      payload.file_type      = 'excel';
+      payload.excel_base64   = this.buildExcelBase64(this.tableColumns, this.tableRows, 'Data');
+      payload.excel_filename  = `${this.safeTitle}.xlsx`;
     } else if (this.showChart) {
+      payload.file_type   = 'image';
       payload.chart_image = this.pieChart.nativeElement.toDataURL('image/png');
-      payload.chart_type  = this.currentChartType;
+    } else if (this.responseFormat === 'text') {
+      payload.file_type = 'text';
+      payload.result    = this.textResult;
     }
 
     this.fastApiService.sendEmail(payload).subscribe({
       next: () => {
         this.isSendingEmail = false;
-        this.emailSent = true;
+        this.emailSent      = true;
+        this.isDrillEmail   = false;
       },
       error: (err) => {
         this.isSendingEmail = false;
+        this.isDrillEmail   = false;
         this.emailError = err?.error?.detail || err?.message || 'Failed to send email.';
       }
     });

@@ -189,13 +189,39 @@
 
     <!-- Table result -->
     <section class="result-section" *ngIf="responseFormat === 'table' && tableColumns.length">
+
+      <!-- Header: title left, actions right -->
       <div class="result-header">
         <h3 class="result-title">{{ chartTitle }}</h3>
-        <div class="table-meta">
-          <span class="table-count">{{ tableRows.length }} rows</span>
-          <span class="table-page-info" *ngIf="totalPages > 1">Page {{ currentPage }} of {{ totalPages }}</span>
+        <div class="result-header__actions">
+          <div class="export-dropdown">
+            <button class="action-btn action-btn--export" (click)="showExportMenu = !showExportMenu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" [class.rotated]="showExportMenu"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="export-menu" *ngIf="showExportMenu">
+              <button class="export-menu__item" (click)="exportCSV()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                CSV (.csv)
+              </button>
+              <button class="export-menu__item" (click)="exportExcel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                Excel (.xlsx)
+              </button>
+              <button class="export-menu__item" (click)="exportTablePdf()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h1a2 2 0 0 1 0 4H9v-4"/></svg>
+                PDF Document
+              </button>
+            </div>
+          </div>
+          <button class="action-btn action-btn--email" (click)="openEmailModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            Send Email
+          </button>
         </div>
       </div>
+
       <div class="table-wrapper">
         <table class="result-table">
           <thead>
@@ -226,33 +252,10 @@
         </span>
       </div>
 
-      <!-- Action toolbar -->
-      <div class="action-toolbar">
-        <div class="export-dropdown">
-          <button class="action-btn action-btn--export" (click)="showExportMenu = !showExportMenu">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" [class.rotated]="showExportMenu"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="export-menu" *ngIf="showExportMenu">
-            <button class="export-menu__item" (click)="exportCSV()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              CSV (.csv)
-            </button>
-            <button class="export-menu__item" (click)="exportExcel()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-              Excel (.xlsx)
-            </button>
-            <button class="export-menu__item" (click)="exportTablePdf()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h1a2 2 0 0 1 0 4H9v-4"/></svg>
-              PDF Document
-            </button>
-          </div>
-        </div>
-        <button class="action-btn action-btn--email" (click)="openEmailModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-          Send Email
-        </button>
+      <!-- Row count at the bottom -->
+      <div class="table-footer-meta">
+        <span class="table-count">{{ tableRows.length }} row{{ tableRows.length !== 1 ? 's' : '' }}</span>
+        <span class="table-page-info" *ngIf="totalPages > 1">Page {{ currentPage }} of {{ totalPages }}</span>
       </div>
 
       <div class="webhook-response" *ngIf="sqlQuery || tablesUsed.length">
@@ -391,6 +394,35 @@
           </span>
         </div>
       
+        <!-- Drill-down action toolbar -->
+        <div class="action-toolbar" *ngIf="!drillDownLoading && drillDownColumns.length">
+          <div class="export-dropdown drill-export-dropdown">
+            <button class="action-btn action-btn--export" (click)="showDrillExportMenu = !showDrillExportMenu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" [class.rotated]="showDrillExportMenu"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="export-menu" *ngIf="showDrillExportMenu">
+              <button class="export-menu__item" (click)="exportDrillCSV()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                CSV (.csv)
+              </button>
+              <button class="export-menu__item" (click)="exportDrillExcel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                Excel (.xlsx)
+              </button>
+              <button class="export-menu__item" (click)="exportDrillPdf()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h1a2 2 0 0 1 0 4H9v-4"/></svg>
+                PDF Document
+              </button>
+            </div>
+          </div>
+          <button class="action-btn action-btn--email" (click)="openDrillEmailModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            Send Email
+          </button>
+        </div>
+
         <div class="response-sql" *ngIf="drillDownSql" style="margin-top:12px">
           <span class="response-label">Generated SQL:</span>
           <pre class="sql-block">{{ drillDownSql }}</pre>

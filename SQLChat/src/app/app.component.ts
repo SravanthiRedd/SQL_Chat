@@ -137,77 +137,73 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     '#FFC107', '#8BC34A', '#CDDC39', '#FFEB3B', '#F44336'
   ];
 
+  // Shared legend label config (reused across chart types)
+  private readonly legendLabels = {
+    padding: 16,
+    usePointStyle: true,
+    pointStyle: 'circle' as const,
+    boxWidth: 10,
+    boxHeight: 10,
+    color: '#333333',
+    font: { size: 12, family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" as const },
+    generateLabels: (chart: any) => this.generateLegendLabelsWithValues(chart)
+  };
+
   // Chart type configurations
   private chartTypeConfigs = {
     pie: {
-      legend: { 
-        display: true, 
+      legend: {
+        display: true,
         position: 'right' as const,
-        labels: {
-          padding: 20,
-          usePointStyle: true,
-          font: { size: 12 },
-          generateLabels: (chart: any) => this.generateLegendLabelsWithValues(chart)
-        }
+        align: 'center' as const,
+        labels: this.legendLabels
       },
       scales: undefined
     },
     doughnut: {
-      legend: { 
-        display: true, 
+      legend: {
+        display: true,
         position: 'right' as const,
-        labels: {
-          padding: 20,
-          usePointStyle: true,
-          font: { size: 12 },
-          generateLabels: (chart: any) => this.generateLegendLabelsWithValues(chart)
-        }
+        align: 'center' as const,
+        labels: this.legendLabels
       },
       scales: undefined
     },
     bar: {
-      legend: { 
+      legend: {
         display: true,
         position: 'top' as const,
-        labels: {
-          padding: 20,
-          usePointStyle: true,
-          font: { size: 12 },
-          generateLabels: (chart: any) => this.generateLegendLabelsWithValues(chart)
-        }
+        align: 'center' as const,
+        labels: this.legendLabels
       },
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: '#e0e0e0' },
-          ticks: { color: '#666' }
+          grid: { color: '#e8eaed' },
+          ticks: { color: '#555', font: { size: 11 } }
         },
         x: {
           grid: { display: false },
-          ticks: { color: '#666' }
+          ticks: { color: '#555', font: { size: 11 } }
         }
       }
     },
     line: {
-      legend: { 
+      legend: {
         display: true,
         position: 'top' as const,
-        labels: {
-          padding: 20,
-          usePointStyle: true,
-          font: { size: 12 },
-          generateLabels: (chart: any) => this.generateLegendLabelsWithValues(chart)
-        }
+        align: 'center' as const,
+        labels: this.legendLabels
       },
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: '#e0e0e0' },
-          ticks: { color: '#666' }
+          grid: { color: '#e8eaed' },
+          ticks: { color: '#555', font: { size: 11 } }
         },
         x: {
           grid: { display: false },
-          ticks: { color: '#666' }
+          ticks: { color: '#555', font: { size: 11 } }
         }
       }
     }
@@ -662,6 +658,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
     const qWords = q.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
 
+    // If there are no meaningful words at all, show nothing
+    if (qWords.length === 0) return [];
+
     const scored: { text: string; score: number }[] = [];
 
     for (const text of this.questionCorpus) {
@@ -670,7 +669,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       // Exact substring match — highest priority
       if (tl.includes(q)) { scored.push({ text, score: 100 }); continue; }
 
-      // Count how many query words appear in the question
+      // Count how many query words appear in the suggestion
       const tw = tl.split(/\s+/);
       let matchCount = 0;
       for (const w of qWords) {
@@ -679,7 +678,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       if (matchCount === 0) continue;
 
+      // Require at least 40% of the typed (non-stop) words to match.
+      // This prevents suggestions appearing when most of the input is unrecognised.
       const ratio = matchCount / qWords.length;
+      if (ratio < 0.4) continue;
+
       scored.push({ text, score: ratio * 50 + matchCount });
     }
 
@@ -838,7 +841,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.tableRows = [];
     this.textResult = '';
     this.currentPage = 1;
-    this.showChart = this.userWantsChart(this.searchQuery);
+    this.showChart = false; // stay hidden until real chart data arrives
 
     this.fastApiService.streamChatAndParseChart(this.searchQuery).subscribe({
       next: (parsed) => {
@@ -863,8 +866,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.tableColumns = parsed.tableColumns;
           this.tableRows    = parsed.tableRows ?? [];
           if (parsed.title) this.chartTitle = parsed.title;
-        } else if (this.showChart || serverWantsChart) {
-          this.showChart    = true;   // ensure the chart section is visible
+        } else if (serverWantsChart) {
+          this.showChart    = true;   // only show chart once real data is ready
           this.tableColumns = parsed.tableColumns ?? [];
           this.tableRows    = parsed.tableRows    ?? [];
           if (chartItems && chartItems.length > 0) {
@@ -1287,31 +1290,41 @@ Return all relevant columns without aggregation.`;
     const data = chart.data;
     if (!data.labels || !data.datasets || !data.datasets[0]) return [];
 
-    const dataset = data.datasets[0];
+    const dataset  = data.datasets[0];
     const chartType = chart.config.type;
+    const isPie    = chartType === 'pie' || chartType === 'doughnut';
+
+    // Total for percentage calculation
+    const total = isPie
+      ? (dataset.data as number[]).reduce((sum: number, v: any) => sum + (Number(v) || 0), 0)
+      : 0;
 
     return data.labels.map((label: string, index: number) => {
-      const value = dataset.data[index];
+      const raw   = dataset.data[index] ?? 0;
+      const value = Number(raw);
       const color = Array.isArray(dataset.backgroundColor)
         ? dataset.backgroundColor[index]
         : dataset.backgroundColor;
 
-      // For pie/doughnut: "2025-07-01 (34)", for bar/line: "Label: value"
-      let displayText = '';
-      if (chartType === 'pie' || chartType === 'doughnut') {
-        displayText = `${label} (${value})`;
+      const displayLabel = (label ?? '').trim() || 'Unknown';
+      const formatted    = value.toLocaleString();
+
+      let displayText: string;
+      if (isPie) {
+        const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+        displayText = `${displayLabel}  ${formatted}  (${pct}%)`;
       } else {
-        displayText = `${label}: ${value}`;
+        displayText = `${displayLabel}: ${formatted}`;
       }
 
       return {
-        text: displayText,
-        fillStyle: color,
-        strokeStyle: color,
-        lineWidth: 0,
-        pointStyle: 'circle',
-        hidden: false,
-        index: index
+        text:       displayText,
+        fillStyle:  color,
+        strokeStyle: '#ffffff',
+        lineWidth:  1,
+        pointStyle: 'circle' as const,
+        hidden:     false,
+        index:      index
       };
     });
   }

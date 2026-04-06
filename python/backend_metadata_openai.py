@@ -30,7 +30,7 @@ DB_CONFIG = {
     "password": "sa123",         # <-- change this
 }
 
-OPENAI_API_KEY = "sk-"        # <-- paste your OpenAI API key here
+OPENAI_API_KEY = ""        # <-- paste your OpenAI API key here
 OPENAI_MODEL   = "gpt-4o-mini"  # cheap + smart. Use "gpt-4o" for best accuracy
 
 METADATA_FILE = "table_metadata.xlsx"
@@ -442,24 +442,31 @@ def detect_format_from_sql(sql: str, question: str) -> str:
     s = sql.upper()
     q = question.lower()
 
-    # Explicit keyword override from question
-    if "pie" in q:                                        return "pie"
-    if "bar chart" in q or "bar graph" in q:              return "bar"
-    if "line chart" in q or "trend" in q:                 return "line"
+    # Only return a chart format when the user explicitly asked for one
+    user_wants_chart = any(kw in q for kw in [
+        "chart", "graph", "plot", "visualize", "visualization",
+        "pie", "bar chart", "bar graph", "line chart", "donut", "doughnut"
+    ])
 
-    # Detect from SQL structure
-    has_group_by   = "GROUP BY" in s
-    has_count      = "COUNT(" in s
-    has_sum        = "SUM(" in s
-    has_date_cast  = "::DATE" in s or "DATE_TRUNC" in s
-    has_order_date = "ORDER BY" in s and ("DATE" in s or "TIME" in s)
+    if user_wants_chart:
+        if "pie" in q or "donut" in q or "doughnut" in q:  return "pie"
+        if "bar" in q:                                       return "bar"
+        if "line" in q or "trend" in q:                     return "line"
+        # User asked for a chart but didn't specify type — auto-pick from SQL
+        has_group_by  = "GROUP BY" in s
+        has_date_cast = "::DATE" in s or "DATE_TRUNC" in s
+        if has_date_cast and has_group_by:                   return "line"
+        return "bar"
 
-    if has_date_cast and has_group_by:                    return "line"   # daily/monthly trend
-    if (has_count or has_sum) and has_group_by:           return "bar"    # count by category
-    if has_count and not has_group_by:                    return "text"   # single count
-    if has_sum and not has_group_by:                      return "text"   # single sum
+    # User did NOT ask for a chart — use text/table only
+    has_count    = "COUNT(" in s
+    has_sum      = "SUM(" in s
+    has_group_by = "GROUP BY" in s
 
-    return "table"   # default
+    if has_count and not has_group_by:  return "text"   # single count
+    if has_sum   and not has_group_by:  return "text"   # single sum
+
+    return "table"   # default for all grouped/multi-row results
 
 # ===============================================================================
 # STREAM HANDLER

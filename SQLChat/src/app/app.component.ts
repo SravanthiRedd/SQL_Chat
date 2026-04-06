@@ -776,6 +776,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           data: chartItems && chartItems.length > 0 ? chartItems : parsed.rawText
         };
 
+        const serverWantsChart = !!parsed.format && parsed.format !== 'table' && parsed.format !== 'text';
+
         if (parsed.format === 'text') {
           const rows = parsed.tableRows ?? [];
           this.textResult = rows.length > 0 ? String(rows[0][0] ?? '') : '';
@@ -784,7 +786,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.tableColumns = parsed.tableColumns;
           this.tableRows    = parsed.tableRows ?? [];
           if (parsed.title) this.chartTitle = parsed.title;
-        } else if (this.showChart) {
+        } else if (this.showChart || serverWantsChart) {
+          this.showChart    = true;   // ensure the chart section is visible
           this.tableColumns = parsed.tableColumns ?? [];
           this.tableRows    = parsed.tableRows    ?? [];
           if (chartItems && chartItems.length > 0) {
@@ -793,6 +796,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
               type: (parsed.type as any) || this.currentChartType,
               data: chartItems
             });
+          } else if (parsed.tableColumns?.length && parsed.tableRows?.length) {
+            // chartData missing but rows are present — fall back to table view
+            this.showChart    = false;
+            this.responseFormat = 'table';
+            this.tableColumns = parsed.tableColumns;
+            this.tableRows    = parsed.tableRows;
+            if (parsed.title) this.chartTitle = parsed.title;
           }
         }
       },

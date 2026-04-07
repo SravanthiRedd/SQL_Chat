@@ -1027,6 +1027,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
   
   closeSliceDetail() {
+  this.highlightSlice(null);
   this.selectedSliceIndex = null;
   this.showDrillDown = false;
   this.drillDownRows = [];
@@ -1036,10 +1037,40 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   this.drillDownSql = '';
   this.drillPage = 1;
 }
+private highlightSlice(index: number | null) {
+  if (!this.currentChart || !this.currentChartData) return;
+  const ds = this.currentChart.data.datasets[0] as any;
+  const len = this.currentChartData.data.length;
+
+  const borderColors: string[] = [];
+  const borderWidths: number[] = [];
+  const offsets: number[]      = [];
+
+  for (let i = 0; i < len; i++) {
+    if (index === null || i !== index) {
+      borderColors.push('#ffffff');
+      borderWidths.push(2);
+      offsets.push(0);
+    } else {
+      // selected: pop out + thick dark border ring so it stands out
+      borderColors.push('#1e293b');
+      borderWidths.push(4);
+      offsets.push(20);
+    }
+  }
+
+  ds.borderColor = borderColors;
+  ds.borderWidth = borderWidths;
+  if (Array.isArray(ds.offset)) ds.offset = offsets;
+
+  this.currentChart.update('none');
+}
+
 onChartSliceClick(index: number) {
   if (!this.currentChartData || index < 0) return;
   this.ngZone.run(() => {
     this.selectedSliceIndex = index;
+    this.highlightSlice(index);
     const clickedLabel = this.currentChartData!.data[index].label;
     const question = this.buildDrillDownQuestion(clickedLabel);
     if (!question) return;
@@ -1247,8 +1278,10 @@ Return all relevant columns without aggregation.`;
         return {
           ...baseDataset,
           backgroundColor: colors,
+          hoverOffset: 18,
           hoverBorderWidth: 3,
-          hoverBorderColor: '#ffffff'
+          hoverBorderColor: '#ffffff',
+          offset: values.map(() => 0)
         };
       
       case 'bar':
